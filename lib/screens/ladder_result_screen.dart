@@ -18,23 +18,40 @@ class LadderResultScreen extends StatefulWidget {
   State<LadderResultScreen> createState() => _LadderResultScreenState();
 }
 
-class _LadderResultScreenState extends State<LadderResultScreen> {
+class _LadderResultScreenState extends State<LadderResultScreen>
+    with SingleTickerProviderStateMixin {
   late LadderBoard _board;
   int? _selected;
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
     _generateBoard();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   void _generateBoard() {
     final columns = widget.participants.length;
-    final rows = (columns * 2).clamp(6, 12);
+    final rows = (columns * 4).clamp(12, 20);
     setState(() {
       _board = LadderBoard(columns: columns, rows: rows);
       _selected = null;
     });
+  }
+
+  void _select(int index) {
+    setState(() => _selected = index);
+    _controller.forward(from: 0);
   }
 
   @override
@@ -49,42 +66,62 @@ class _LadderResultScreenState extends State<LadderResultScreen> {
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              SizedBox(
-                height: 28,
-                child: Text(
-                  _selected == null
-                      ? '참가자를 눌러 결과를 확인하세요'
-                      : '${widget.participants[_selected!]} → '
-                          '${widget.results[_board.finalColumnFrom(_selected!)]}',
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  final revealed = _selected != null && _controller.value >= 1;
+                  return SizedBox(
+                    height: 28,
+                    child: Text(
+                      _selected == null
+                          ? '참가자를 눌러 결과를 확인하세요'
+                          : revealed
+                              ? '${widget.participants[_selected!]} → '
+                                  '${widget.results[_board.finalColumnFrom(_selected!)]}'
+                              : '내려가는 중...',
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
               _LabelRow(
                 labels: widget.participants,
                 selected: _selected,
-                onTap: (i) => setState(() => _selected = i),
+                onTap: _select,
               ),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: CustomPaint(
-                    size: Size.infinite,
-                    painter: LadderPainter(
-                      board: _board,
-                      highlightPath: path,
-                      lineColor: colorScheme.outlineVariant,
-                      highlightColor: colorScheme.primary,
-                    ),
+                  child: AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, _) {
+                      return CustomPaint(
+                        size: Size.infinite,
+                        painter: LadderPainter(
+                          board: _board,
+                          highlightPath: path,
+                          highlightProgress:
+                              path == null ? null : _controller.value * (path.length - 1),
+                          lineColor: colorScheme.outlineVariant,
+                          highlightColor: colorScheme.primary,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
-              _LabelRow(
-                labels: widget.results,
-                selected:
-                    _selected != null ? _board.finalColumnFrom(_selected!) : null,
-                onTap: null,
+              AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  final revealed = _selected != null && _controller.value >= 1;
+                  return _LabelRow(
+                    labels: widget.results,
+                    selected: revealed ? _board.finalColumnFrom(_selected!) : null,
+                    onTap: null,
+                  );
+                },
               ),
               const SizedBox(height: 16),
               // TODO: 전면광고 Placeholder + SDK 연동 (다음 단계).

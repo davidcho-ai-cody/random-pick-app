@@ -4,6 +4,51 @@ import 'package:flutter/material.dart';
 
 import '../widgets/roulette_wheel.dart';
 
+/// 휠 색상과 무관하게 항상 잘 보이도록 흰 채우기 + 진한 테두리로 그리는
+/// 고정 포인터. 어떤 조각 색 위에 있어도 대비가 유지된다.
+class _WheelPointer extends StatelessWidget {
+  const _WheelPointer();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 40,
+      height: 44,
+      child: CustomPaint(painter: _WheelPointerPainter()),
+    );
+  }
+}
+
+class _WheelPointerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width / 2, size.height)
+      ..lineTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..close();
+
+    canvas.drawShadow(path, Colors.black, 3, false);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.black87
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _WheelPointerPainter oldDelegate) => false;
+}
+
 /// 룰렛을 돌려 항목 중 하나를 무작위로 뽑는 결과 화면.
 class RouletteResultScreen extends StatefulWidget {
   const RouletteResultScreen({super.key, required this.items});
@@ -103,13 +148,9 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
                     angle: _currentAngle,
                     child: RouletteWheel(items: items, size: wheelSize),
                   ),
-                  Positioned(
-                    top: -6,
-                    child: Icon(
-                      Icons.arrow_drop_down,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                  const Positioned(
+                    top: -14,
+                    child: _WheelPointer(),
                   ),
                 ],
               ),

@@ -11,7 +11,7 @@ class LadderBoard {
     for (var row = 0; row < rows; row++) {
       var col = 0;
       while (col < columns - 1) {
-        if (rnd.nextBool()) {
+        if (rnd.nextDouble() < 0.6) {
           rungs[row][col] = true;
           col += 2; // 인접 다리가 겹치지 않도록 한 칸 건너뛴다.
         } else {
