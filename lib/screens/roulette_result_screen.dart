@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../services/ad_service.dart';
 import '../widgets/roulette_wheel.dart';
 
 /// 휠 색상과 무관하게 항상 잘 보이도록 흰 채우기 + 진한 테두리로 그리는
@@ -169,13 +170,13 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
                       ),
               ),
               const Spacer(),
-              // TODO: 전면광고 Placeholder + SDK 연동 (다음 단계).
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () =>
-                          Navigator.of(context).popUntil((r) => r.isFirst),
+                      onPressed: () => AdService.showThenProceed(
+                        () => Navigator.of(context).popUntil((r) => r.isFirst),
+                      ),
                       child: const Padding(
                         padding: EdgeInsets.symmetric(vertical: 14),
                         child: Text('홈으로'),

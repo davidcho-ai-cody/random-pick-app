@@ -6,53 +6,52 @@ PLAY YOUR NEXT WORLD의 두 번째 앱. 룰렛 / 사다리타기 / 팀나누기�
 - Flutter 패키지명: `random_pick`
 - 제안 Android applicationId: `com.pyworld.randompick` (필요 시 변경 가능)
 
-## 현재 상태 (이번 세션까지)
+## 현재 상태
 
 - [x] `pubspec.yaml` / 폴더 구조 설계
 - [x] 홈 화면(모드 선택 3개 버튼) UI
-- [ ] 룰렛 로직
-- [ ] 사다리타기 로직
-- [ ] 팀나누기 로직
-- [ ] 전면광고 SDK 연동
+- [x] 룰렛 로직 (회전 애니메이션 + 시인성 좋은 포인터)
+- [x] 사다리타기 로직 (밀도 있는 사다리 + 경로 애니메이션)
+- [x] 팀나누기 로직 (라운드로빈 순차 공개 연출)
+- [x] 전면광고 SDK 연동 (`google_mobile_ads`, 결과 화면에서 "홈으로" 이동 시 노출)
+  - 현재는 구글 공식 테스트 광고 단위 ID 사용 중. 실제 출시 전
+    [lib/services/ad_service.dart](lib/services/ad_service.dart)의 ID와
+    Android/iOS 매니페스트의 App ID를 AdMob 콘솔에서 발급받은 값으로 교체할 것.
 
 ## 폴더 구조
 
 ```
 lib/
-  main.dart              # 앱 진입점, MaterialApp 설정
+  main.dart                  # 앱 진입점, MobileAds 초기화, MaterialApp 설정
   screens/
-    home_screen.dart      # 홈: 모드 선택 3버튼 (구현 완료)
-    input_screen.dart     # 입력: 모드별 항목/인원 입력 (스텁)
-    result_screen.dart    # 결과: 모드별 결과 표시 (스텁, 전면광고 자리 예정)
+    home_screen.dart          # 홈: 모드 선택 3버튼
+    roulette_input/result_screen.dart
+    ladder_input/result_screen.dart
+    team_input/result_screen.dart
   widgets/
-    mode_button.dart       # 홈 화면 모드 선택 카드 버튼
+    mode_button.dart, roulette_wheel.dart, ladder_painter.dart
   models/
-    game_mode.dart          # GameMode enum (roulette/ladder/team)
+    game_mode.dart, ladder_board.dart, team_split.dart
+  services/
+    ad_service.dart          # 전면광고 로드/노출
   theme/
-    app_theme.dart          # 브랜드 톤 ThemeData
+    app_theme.dart            # 브랜드 톤 ThemeData
 ```
 
 ## 로컬에서 실행하기
 
-이 저장소는 Flutter SDK 없이 소스만 작성된 상태입니다. 플랫폼 폴더
-(`android/`, `ios/` 등)는 아직 생성되지 않았습니다.
+```
+flutter pub get
+flutter run
+```
 
-1. [Flutter SDK](https://docs.flutter.dev/get-started/install)를 설치하고
-   `flutter doctor`로 설치를 확인합니다.
-2. 프로젝트 루트(`D:\Projects\random-pick-app`)에서 아래 명령을 실행합니다.
-   `flutter create .`는 기존 `pubspec.yaml`/`lib/`를 건드리지 않고
-   누락된 `android/`, `ios/` 등 플랫폼 폴더만 채워 넣습니다.
-
-   ```
-   flutter create --org com.pyworld --project-name random_pick .
-   flutter pub get
-   flutter run
-   ```
+`.claude/launch.json`에 웹 프리뷰용 설정(`flutter run -d web-server`)도 등록되어 있다.
 
 ## 다음 단계 제안
 
-1. Flutter SDK 설치 후 위 명령으로 플랫폼 폴더 생성 및 실행 확인
-2. 입력 화면(`input_screen.dart`) UI: 모드별 항목/인원 입력 폼
-3. 룰렛/사다리타기/팀나누기 핵심 로직 구현 및 결과 화면 연결
-4. 결과 화면에 전면광고 Placeholder 배치
-5. 앱 아이콘/스플래시, Google Play 출시 메타데이터 준비
+1. AdMob 콘솔에서 실제 앱 등록 + 전면광고 단위 ID 발급 후
+   [lib/services/ad_service.dart](lib/services/ad_service.dart)와
+   `android/app/src/main/AndroidManifest.xml` / `ios/Runner/Info.plist`의
+   테스트 ID를 실제 ID로 교체
+2. 앱 아이콘/스플래시, Google Play 출시 메타데이터 준비
+3. 실기기/에뮬레이터에서 전면광고가 정상적으로 뜨는지 확인

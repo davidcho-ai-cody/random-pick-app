@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/team_split.dart';
+import '../services/ad_service.dart';
 import '../widgets/roulette_wheel.dart' show kWheelColors;
 
 /// 참가자를 팀으로 나눈 결과를 보여주는 화면.
@@ -82,13 +83,13 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              // TODO: 전면광고 Placeholder + SDK 연동 (다음 단계).
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () =>
-                          Navigator.of(context).popUntil((r) => r.isFirst),
+                      onPressed: () => AdService.showThenProceed(
+                        () => Navigator.of(context).popUntil((r) => r.isFirst),
+                      ),
                       child: const Padding(
                         padding: EdgeInsets.symmetric(vertical: 14),
                         child: Text('홈으로'),

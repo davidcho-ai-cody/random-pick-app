@@ -13,9 +13,8 @@ build/
 .vscode/
 *.iml
 
-# Platform folders (generated later via `flutter create .`)
-android/
-ios/
+# Platform folders (android/ios는 AdMob 등 실제 설정을 담고 있어 추적함;
+# 나머지는 `flutter create .`로 나중에 생성)
 web/
 windows/
 linux/

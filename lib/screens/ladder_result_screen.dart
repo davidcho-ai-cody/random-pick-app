@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/ladder_board.dart';
+import '../services/ad_service.dart';
 import '../widgets/ladder_painter.dart';
 
 /// 사다리를 생성하고, 참가자를 선택하면 해당 경로를 강조해서 보여주는 화면.
@@ -124,13 +125,13 @@ class _LadderResultScreenState extends State<LadderResultScreen>
                 },
               ),
               const SizedBox(height: 16),
-              // TODO: 전면광고 Placeholder + SDK 연동 (다음 단계).
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () =>
-                          Navigator.of(context).popUntil((r) => r.isFirst),
+                      onPressed: () => AdService.showThenProceed(
+                        () => Navigator.of(context).popUntil((r) => r.isFirst),
+                      ),
                       child: const Padding(
                         padding: EdgeInsets.symmetric(vertical: 14),
                         child: Text('홈으로'),
