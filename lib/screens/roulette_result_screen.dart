@@ -134,68 +134,78 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
     final size = MediaQuery.of(context).size;
     final wheelSize = min(size.width - 64, 320.0);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('룰렛 결과')),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const Spacer(),
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Transform.rotate(
-                    angle: _currentAngle,
-                    child: RouletteWheel(items: items, size: wheelSize),
-                  ),
-                  const Positioned(
-                    top: -14,
-                    child: _WheelPointer(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                height: 48,
-                child: _winnerIndex != null
-                    ? Text(
-                        '🎉 ${items[_winnerIndex!]}',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w800),
-                      )
-                    : Text(
-                        _spinning ? '돌아가는 중...' : ' ',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-              ),
-              const Spacer(),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => AdService.showThenProceed(
-                        () => Navigator.of(context).popUntil((r) => r.isFirst),
-                      ),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text('홈으로'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        AdService.showThenProceed(() => Navigator.of(context).pop());
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('룰렛 결과')),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const Spacer(),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Transform.rotate(
+                      angle: _currentAngle,
+                      child: RouletteWheel(items: items, size: wheelSize),
+                    ),
+                    const Positioned(
+                      top: -14,
+                      child: _WheelPointer(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 48,
+                  child: _winnerIndex != null
+                      ? Text(
+                          '🎉 ${items[_winnerIndex!]}',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        )
+                      : Text(
+                          _spinning ? '돌아가는 중...' : ' ',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => AdService.showThenProceed(
+                          () =>
+                              Navigator.of(context).popUntil((r) => r.isFirst),
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Text('홈으로'),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: _spinning ? null : _spin,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text('다시 돌리기'),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _spinning ? null : _spin,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Text('다시 돌리기'),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

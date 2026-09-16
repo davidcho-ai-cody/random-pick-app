@@ -60,55 +60,63 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('팀나누기 결과')),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Expanded(
-                child: ListView.separated(
-                  itemCount: _teams.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    final color = kWheelColors[index % kWheelColors.length];
-                    return _TeamCard(
-                      teamName: '${index + 1}팀',
-                      members: _teams[index],
-                      revealedCount: _revealedCounts[index],
-                      color: color,
-                    );
-                  },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        AdService.showThenProceed(() => Navigator.of(context).pop());
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('팀나누기 결과')),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: _teams.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 16),
+                    itemBuilder: (context, index) {
+                      final color = kWheelColors[index % kWheelColors.length];
+                      return _TeamCard(
+                        teamName: '${index + 1}팀',
+                        members: _teams[index],
+                        revealedCount: _revealedCounts[index],
+                        color: color,
+                      );
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => AdService.showThenProceed(
-                        () => Navigator.of(context).popUntil((r) => r.isFirst),
-                      ),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text('홈으로'),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: _revealing ? null : _shuffle,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text('다시 나누기'),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => AdService.showThenProceed(
+                          () =>
+                              Navigator.of(context).popUntil((r) => r.isFirst),
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Text('홈으로'),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _revealing ? null : _shuffle,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Text('다시 나누기'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

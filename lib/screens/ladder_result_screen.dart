@@ -60,97 +60,109 @@ class _LadderResultScreenState extends State<LadderResultScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final path = _selected != null ? _board.pathFrom(_selected!) : null;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('사다리타기 결과')),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, _) {
-                  final revealed = _selected != null && _controller.value >= 1;
-                  return SizedBox(
-                    height: 28,
-                    child: Text(
-                      _selected == null
-                          ? '참가자를 눌러 결과를 확인하세요'
-                          : revealed
-                              ? '${widget.participants[_selected!]} → '
-                                  '${widget.results[_board.finalColumnFrom(_selected!)]}'
-                              : '내려가는 중...',
-                      style: Theme.of(context).textTheme.titleMedium,
-                      textAlign: TextAlign.center,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        AdService.showThenProceed(() => Navigator.of(context).pop());
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('사다리타기 결과')),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, _) {
+                    final revealed =
+                        _selected != null && _controller.value >= 1;
+                    return SizedBox(
+                      height: 28,
+                      child: Text(
+                        _selected == null
+                            ? '참가자를 눌러 결과를 확인하세요'
+                            : revealed
+                                ? '${widget.participants[_selected!]} → '
+                                    '${widget.results[_board.finalColumnFrom(_selected!)]}'
+                                : '내려가는 중...',
+                        style: Theme.of(context).textTheme.titleMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _LabelRow(
+                  labels: widget.participants,
+                  selected: _selected,
+                  onTap: _select,
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, _) {
+                        return CustomPaint(
+                          size: Size.infinite,
+                          painter: LadderPainter(
+                            board: _board,
+                            highlightPath: path,
+                            highlightProgress: path == null
+                                ? null
+                                : _controller.value * (path.length - 1),
+                            lineColor: colorScheme.outlineVariant,
+                            highlightColor: colorScheme.primary,
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              _LabelRow(
-                labels: widget.participants,
-                selected: _selected,
-                onTap: _select,
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: AnimatedBuilder(
-                    animation: _controller,
-                    builder: (context, _) {
-                      return CustomPaint(
-                        size: Size.infinite,
-                        painter: LadderPainter(
-                          board: _board,
-                          highlightPath: path,
-                          highlightProgress:
-                              path == null ? null : _controller.value * (path.length - 1),
-                          lineColor: colorScheme.outlineVariant,
-                          highlightColor: colorScheme.primary,
-                        ),
-                      );
-                    },
                   ),
                 ),
-              ),
-              AnimatedBuilder(
-                animation: _controller,
-                builder: (context, _) {
-                  final revealed = _selected != null && _controller.value >= 1;
-                  return _LabelRow(
-                    labels: widget.results,
-                    selected: revealed ? _board.finalColumnFrom(_selected!) : null,
-                    onTap: null,
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => AdService.showThenProceed(
-                        () => Navigator.of(context).popUntil((r) => r.isFirst),
-                      ),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text('홈으로'),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: _generateBoard,
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text('다시 섞기'),
+                AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, _) {
+                    final revealed =
+                        _selected != null && _controller.value >= 1;
+                    return _LabelRow(
+                      labels: widget.results,
+                      selected:
+                          revealed ? _board.finalColumnFrom(_selected!) : null,
+                      onTap: null,
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => AdService.showThenProceed(
+                          () =>
+                              Navigator.of(context).popUntil((r) => r.isFirst),
+                        ),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Text('홈으로'),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _generateBoard,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          child: Text('다시 섞기'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
