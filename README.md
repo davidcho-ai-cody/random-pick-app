@@ -13,10 +13,13 @@ PLAY YOUR NEXT WORLD의 두 번째 앱. 룰렛 / 사다리타기 / 팀나누기�
 - [x] 룰렛 로직 (회전 애니메이션 + 시인성 좋은 포인터)
 - [x] 사다리타기 로직 (밀도 있는 사다리 + 경로 애니메이션)
 - [x] 팀나누기 로직 (라운드로빈 순차 공개 연출)
-- [x] 전면광고 SDK 연동 (`google_mobile_ads`, 결과 화면에서 "홈으로" 이동 시 노출)
+- [x] 전면광고 SDK 연동 (`google_mobile_ads`, 결과 화면에서 "홈으로"/시스템 뒤로가기로
+      나갈 때 노출)
   - 현재는 구글 공식 테스트 광고 단위 ID 사용 중. 실제 출시 전
     [lib/services/ad_service.dart](lib/services/ad_service.dart)의 ID와
     Android/iOS 매니페스트의 App ID를 AdMob 콘솔에서 발급받은 값으로 교체할 것.
+- [x] 앱 아이콘 / 스플래시 화면 (룰렛 휠 모티프, `assets/icon/`)
+- [x] 실기기(Android) 빌드 및 동작 확인
 
 ## 폴더 구조
 
@@ -49,9 +52,9 @@ flutter run
 
 ## 다음 단계 제안
 
-1. AdMob 콘솔에서 실제 앱 등록 + 전면광고 단위 ID 발급 후
+1. 다크모드 지원 여부 결정 (현재 라이트 테마만 있음)
+2. AdMob 콘솔에서 실제 앱 등록 + 전면광고 단위 ID 발급 후
    [lib/services/ad_service.dart](lib/services/ad_service.dart)와
    `android/app/src/main/AndroidManifest.xml` / `ios/Runner/Info.plist`의
    테스트 ID를 실제 ID로 교체
-2. 앱 아이콘/스플래시, Google Play 출시 메타데이터 준비
-3. 실기기/에뮬레이터에서 전면광고가 정상적으로 뜨는지 확인
+3. Google Play 출시 메타데이터(개인정보처리방침, 스토어 설명/스크린샷 등) 준비
