@@ -116,6 +116,16 @@ class _RouletteInputScreenState extends State<RouletteInputScreen> {
                         final stamp =
                             '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
                         return Card(
+                          color: Colors.white,
+                          elevation: 2,
+                          shadowColor: const Color(0x336750E5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            side: const BorderSide(
+                              color: Color(0xFFD8D0F2),
+                              width: 1.2,
+                            ),
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.all(12),
                             child: Column(
@@ -133,6 +143,16 @@ class _RouletteInputScreenState extends State<RouletteInputScreen> {
                                   child: TextButton(
                                       onPressed: () =>
                                           Navigator.pop(context, entry),
+                                      style: TextButton.styleFrom(
+                                        backgroundColor:
+                                            const Color(0xFFF0EAFE),
+                                        foregroundColor:
+                                            const Color(0xFF5C43B5),
+                                        minimumSize: const Size(72, 40),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 8),
+                                        shape: const StadiumBorder(),
+                                      ),
                                       child: const Text('불러오기')),
                                 ),
                               ],
@@ -190,13 +210,14 @@ class _RouletteInputScreenState extends State<RouletteInputScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Stack(
         children: [
           const Positioned.fill(
               child: Image(
                   image: AssetImage('assets/images/home_background.png'),
-                  fit: BoxFit.cover)),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter)),
           SafeArea(
             child: Column(
               children: [
