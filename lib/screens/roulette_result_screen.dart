@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/recent_use_service.dart';
 import '../services/ad_service.dart';
 import '../widgets/roulette_wheel.dart';
 
@@ -73,6 +75,10 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
   @override
   void initState() {
     super.initState();
+    // 결과 화면에 실제 진입한 목록만 한 번 저장한다. 회전은 저장을 기다리지 않는다.
+    SharedPreferences.getInstance()
+        .then((prefs) => RecentUseService(prefs).saveRoulette(widget.items))
+        .catchError((Object _) => false);
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
