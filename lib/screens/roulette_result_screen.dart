@@ -215,11 +215,18 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
                     Expanded(
                       child: LayoutBuilder(
                         builder: (context, constraints) {
-                          final wheelSize = min(
+                          final baseWheelSize = min(
                             min(constraints.maxWidth - 24,
                                 constraints.maxHeight * 0.55),
                             320.0,
                           );
+                          // 결과 카드와 마스코트가 추가될 때만 남은 높이에 맞춘다.
+                          final wheelSize = _winnerIndex == null
+                              ? baseWheelSize
+                              : min(baseWheelSize,
+                                  max(180.0, constraints.maxHeight - 270));
+                          final mascotHeight = min(
+                              76.0, max(60.0, constraints.maxHeight * 0.12));
                           return SingleChildScrollView(
                             child: ConstrainedBox(
                               constraints: BoxConstraints(
@@ -228,7 +235,8 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceEvenly,
                                 children: [
-                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                      height: _winnerIndex == null ? 12 : 8),
                                   Text(
                                     '두근두근 어떤 결과가 나왔을까요?',
                                     textAlign: TextAlign.center,
@@ -240,7 +248,8 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),
-                                  const SizedBox(height: 22),
+                                  SizedBox(
+                                      height: _winnerIndex == null ? 22 : 12),
                                   Stack(
                                     clipBehavior: Clip.none,
                                     alignment: Alignment.center,
@@ -281,7 +290,8 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
                                           top: -14, child: _WheelPointer()),
                                     ],
                                   ),
-                                  const SizedBox(height: 26),
+                                  SizedBox(
+                                      height: _winnerIndex == null ? 26 : 14),
                                   if (_winnerIndex == null)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
@@ -333,16 +343,18 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
                                         ),
                                       ],
                                     ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                      height: _winnerIndex == null ? 12 : 8),
                                   if (_winnerIndex != null)
                                     Image.asset(
                                       'assets/images/roulette/result_mascot.png',
                                       width:
-                                          min(constraints.maxWidth * 0.42, 140),
-                                      height: 86,
+                                          min(constraints.maxWidth * 0.38, 128),
+                                      height: mascotHeight,
                                       fit: BoxFit.contain,
                                     ),
-                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                      height: _winnerIndex == null ? 12 : 16),
                                 ],
                               ),
                             ),
@@ -423,7 +435,7 @@ class _ResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(24),
