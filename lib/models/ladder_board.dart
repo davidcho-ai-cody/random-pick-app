@@ -9,13 +9,16 @@ class LadderBoard {
         rungs = List.generate(rows, (_) => List.filled(columns - 1, false)) {
     final rnd = random ?? Random();
     for (var row = 0; row < rows; row++) {
-      var col = 0;
-      while (col < columns - 1) {
+      // 행마다 검사 방향을 공정하게 선택해 인접 다리 충돌을 피하면서도
+      // 한쪽 열이 항상 먼저 선택되는 편향을 없앤다.
+      final fromLeft = rnd.nextBool();
+      var col = fromLeft ? 0 : columns - 2;
+      while (col >= 0 && col < columns - 1) {
         if (rnd.nextDouble() < 0.6) {
           rungs[row][col] = true;
-          col += 2; // 인접 다리가 겹치지 않도록 한 칸 건너뛴다.
+          col += fromLeft ? 2 : -2; // 인접 다리가 겹치지 않도록 건너뛴다.
         } else {
-          col += 1;
+          col += fromLeft ? 1 : -1;
         }
       }
     }

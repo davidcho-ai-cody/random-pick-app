@@ -43,7 +43,7 @@ class _LadderResultScreenState extends State<LadderResultScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1600),
     );
     _controller.addStatusListener((status) {
       if (!mounted || status != AnimationStatus.completed) return;
