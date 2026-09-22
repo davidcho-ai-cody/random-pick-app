@@ -12,10 +12,14 @@ class LadderResultScreen extends StatefulWidget {
     super.key,
     required this.participants,
     required this.results,
+    this.showAdThenProceed,
   });
 
   final List<String> participants;
   final List<String> results;
+
+  /// Allows the exit advertisement call to be observed in widget tests.
+  final void Function(VoidCallback proceed)? showAdThenProceed;
 
   @override
   State<LadderResultScreen> createState() => _LadderResultScreenState();
@@ -25,6 +29,8 @@ class _LadderResultScreenState extends State<LadderResultScreen>
     with SingleTickerProviderStateMixin {
   late LadderBoard _board;
   int? _selected;
+  bool _hasUsedLadder = false;
+  bool _leaving = false;
   late final AnimationController _controller;
 
   @override
@@ -35,11 +41,6 @@ class _LadderResultScreenState extends State<LadderResultScreen>
       duration: const Duration(milliseconds: 800),
     );
     _generateBoard();
-    // 생성된 사다리에 진입한 조합만 한 번 기록한다. 재생성은 저장하지 않는다.
-    SharedPreferences.getInstance()
-        .then((prefs) => RecentUseService(prefs)
-            .saveLadder(widget.participants, widget.results))
-        .catchError((Object _) => false);
   }
 
   @override
@@ -58,8 +59,35 @@ class _LadderResultScreenState extends State<LadderResultScreen>
   }
 
   void _select(int index) {
+    if (!_hasUsedLadder) {
+      _hasUsedLadder = true;
+      // 첫 경로 실행만 기록한다. 저장은 애니메이션을 기다리게 하지 않는다.
+      SharedPreferences.getInstance()
+          .then((prefs) => RecentUseService(prefs)
+              .saveLadder(widget.participants, widget.results))
+          .catchError((Object _) => false);
+    }
     setState(() => _selected = index);
     _controller.forward(from: 0);
+  }
+
+  void _leave(VoidCallback proceed) {
+    if (_leaving) return;
+    _leaving = true;
+    if (!_hasUsedLadder) {
+      proceed();
+      return;
+    }
+    void safeProceed() {
+      if (mounted) proceed();
+    }
+
+    final handler = widget.showAdThenProceed;
+    if (handler != null) {
+      handler(safeProceed);
+    } else {
+      AdService.showThenProceed(safeProceed);
+    }
   }
 
   @override
@@ -71,7 +99,7 @@ class _LadderResultScreenState extends State<LadderResultScreen>
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        AdService.showThenProceed(() => Navigator.of(context).pop());
+        _leave(() => Navigator.of(context).pop());
       },
       child: Scaffold(
         appBar: AppBar(title: const Text('사다리타기 결과')),
@@ -146,7 +174,7 @@ class _LadderResultScreenState extends State<LadderResultScreen>
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => AdService.showThenProceed(
+                        onPressed: () => _leave(
                           () =>
                               Navigator.of(context).popUntil((r) => r.isFirst),
                         ),

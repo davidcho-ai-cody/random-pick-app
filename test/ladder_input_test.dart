@@ -91,7 +91,7 @@ void main() {
     expect(result.results, ['꽝', '당첨']);
   });
 
-  testWidgets('result entry saves once and reshuffle does not save again',
+  testWidgets('first path saves once across more selections and reshuffle',
       (tester) async {
     await tester.pumpWidget(const MaterialApp(
       home:
@@ -100,9 +100,69 @@ void main() {
     await tester.pumpAndSettle();
     final prefs = await SharedPreferences.getInstance();
     final service = RecentUseService(prefs);
-    expect(service.read(GameMode.ladder).single.results, ['꽝', '당첨']);
+    expect(service.read(GameMode.ladder), isEmpty);
+    await tester.tap(find.text('철수'));
+    await tester.pump();
+    expect(find.text('내려가는 중...'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('철수 → '), findsOneWidget);
+    final first = service.read(GameMode.ladder).single;
+    expect(first.results, ['꽝', '당첨']);
+    await tester.tap(find.text('영희'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('영희 → '), findsOneWidget);
+    expect(service.read(GameMode.ladder).single.id, first.id);
     await tester.tap(find.text('다시 섞기'));
     await tester.pump();
-    expect(service.read(GameMode.ladder).length, 1);
+    expect(find.text('참가자를 눌러 결과를 확인하세요'), findsOneWidget);
+    await tester.tap(find.text('철수'));
+    await tester.pumpAndSettle();
+    expect(service.read(GameMode.ladder).single.id, first.id);
   });
+
+  for (final exit in ['back', 'home']) {
+    for (final use in ['unused', 'selected', 'reshuffled']) {
+      testWidgets('$exit exit after $use calls ads only after selection',
+          (tester) async {
+        var adCalls = 0;
+        await tester.pumpWidget(MaterialApp(
+          home: Builder(builder: (context) {
+            return Scaffold(
+              body: ElevatedButton(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => LadderResultScreen(
+                    participants: const ['철수', '영희'],
+                    results: const ['꽝', '당첨'],
+                    showAdThenProceed: (proceed) {
+                      adCalls++;
+                      proceed();
+                    },
+                  ),
+                )),
+                child: const Text('열기'),
+              ),
+            );
+          }),
+        ));
+        await tester.tap(find.text('열기'));
+        await tester.pumpAndSettle();
+        if (use != 'unused') {
+          await tester.tap(find.text('철수'));
+          await tester.pumpAndSettle();
+        }
+        if (use == 'reshuffled') {
+          await tester.tap(find.text('다시 섞기'));
+          await tester.pump();
+        }
+        if (exit == 'back') {
+          await tester.binding.handlePopRoute();
+        } else {
+          await tester.tap(find.text('홈으로'));
+        }
+        await tester.pumpAndSettle();
+        expect(adCalls, use == 'unused' ? 0 : 1);
+        expect(find.text('열기'), findsOneWidget);
+      });
+    }
+  }
 }
