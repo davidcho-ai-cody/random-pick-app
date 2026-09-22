@@ -54,9 +54,21 @@ class LadderPainter extends CustomPainter {
     if (path != null) {
       final highlightPaint = Paint()
         ..color = highlightColor
-        ..strokeWidth = 4
+        ..strokeWidth = 4.5
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round;
+      final glowPaint = Paint()
+        ..color = highlightColor.withValues(alpha: 0.34)
+        ..strokeWidth = 11
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+      Offset? tip;
+      void drawHighlight(Offset start, Offset end) {
+        canvas.drawLine(start, end, glowPaint);
+        canvas.drawLine(start, end, highlightPaint);
+        tip = end;
+      }
 
       // 실제 사다리 격자(세로줄 + 다리)를 그대로 따라가도록, 다리를 타는
       // 지점(row 중간)에서만 옆 칸으로 꺾이게 그린다.
@@ -80,36 +92,34 @@ class LadderPainter extends CustomPainter {
 
         if (from == to) {
           final currentY = rowTop + (rowBottom - rowTop) * segmentT;
-          canvas.drawLine(
+          drawHighlight(
             Offset(fromX, rowTop),
             Offset(fromX, currentY),
-            highlightPaint,
           );
         } else {
           final toX = _colX(to, size.width);
           if (segmentT <= 1 / 3) {
             final t = segmentT / (1 / 3);
             final currentY = rowTop + (rowMid - rowTop) * t;
-            canvas.drawLine(
-                Offset(fromX, rowTop), Offset(fromX, currentY), highlightPaint);
+            drawHighlight(Offset(fromX, rowTop), Offset(fromX, currentY));
           } else if (segmentT <= 2 / 3) {
-            canvas.drawLine(
-                Offset(fromX, rowTop), Offset(fromX, rowMid), highlightPaint);
+            drawHighlight(Offset(fromX, rowTop), Offset(fromX, rowMid));
             final t = (segmentT - 1 / 3) / (1 / 3);
             final currentX = fromX + (toX - fromX) * t;
-            canvas.drawLine(
-                Offset(fromX, rowMid), Offset(currentX, rowMid), highlightPaint);
+            drawHighlight(Offset(fromX, rowMid), Offset(currentX, rowMid));
           } else {
-            canvas.drawLine(
-                Offset(fromX, rowTop), Offset(fromX, rowMid), highlightPaint);
-            canvas.drawLine(
-                Offset(fromX, rowMid), Offset(toX, rowMid), highlightPaint);
+            drawHighlight(Offset(fromX, rowTop), Offset(fromX, rowMid));
+            drawHighlight(Offset(fromX, rowMid), Offset(toX, rowMid));
             final t = (segmentT - 2 / 3) / (1 / 3);
             final currentY = rowMid + (rowBottom - rowMid) * t;
-            canvas.drawLine(
-                Offset(toX, rowMid), Offset(toX, currentY), highlightPaint);
+            drawHighlight(Offset(toX, rowMid), Offset(toX, currentY));
           }
         }
+      }
+      if (tip != null && progress != null && progress < path.length - 1) {
+        canvas.drawCircle(
+            tip!, 8, Paint()..color = Colors.white.withValues(alpha: 0.75));
+        canvas.drawCircle(tip!, 4.5, Paint()..color = highlightColor);
       }
     }
   }
@@ -118,6 +128,8 @@ class LadderPainter extends CustomPainter {
   bool shouldRepaint(covariant LadderPainter oldDelegate) {
     return oldDelegate.board != board ||
         oldDelegate.highlightPath != highlightPath ||
-        oldDelegate.highlightProgress != highlightProgress;
+        oldDelegate.highlightProgress != highlightProgress ||
+        oldDelegate.lineColor != lineColor ||
+        oldDelegate.highlightColor != highlightColor;
   }
 }

@@ -101,11 +101,31 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     final service = RecentUseService(prefs);
     expect(service.read(GameMode.ladder), isEmpty);
+    expect(find.text('누가 어디로 갈까요?'), findsOneWidget);
+    expect(find.text('참가자를 눌러 결과를 확인해보세요'), findsOneWidget);
+    expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage)
+                .assetName
+                .endsWith('ladder_result_mascot.png')),
+        findsNothing);
     await tester.tap(find.text('철수'));
     await tester.pump();
-    expect(find.text('내려가는 중...'), findsOneWidget);
+    expect(find.text('✨ 철수의 길을 따라가는 중...'), findsOneWidget);
+    expect(find.textContaining('철수 → '), findsNothing);
     await tester.pumpAndSettle();
     expect(find.textContaining('철수 → '), findsOneWidget);
+    expect(find.text('결과가 나왔어요! ✨'), findsOneWidget);
+    expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage)
+                .assetName
+                .endsWith('ladder_result_mascot.png')),
+        findsOneWidget);
     final first = service.read(GameMode.ladder).single;
     expect(first.results, ['꽝', '당첨']);
     await tester.tap(find.text('영희'));
@@ -114,10 +134,39 @@ void main() {
     expect(service.read(GameMode.ladder).single.id, first.id);
     await tester.tap(find.text('다시 섞기'));
     await tester.pump();
-    expect(find.text('참가자를 눌러 결과를 확인하세요'), findsOneWidget);
+    expect(find.text('누가 어디로 갈까요?'), findsOneWidget);
+    expect(find.textContaining('철수 → '), findsNothing);
+    expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage)
+                .assetName
+                .endsWith('ladder_result_mascot.png')),
+        findsNothing);
     await tester.tap(find.text('철수'));
     await tester.pumpAndSettle();
     expect(service.read(GameMode.ladder).single.id, first.id);
+  });
+
+  testWidgets('ten long labels fit a compact portrait without overflow',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final names = List.generate(10, (i) => '긴참가자이름$i');
+    final results = List.generate(10, (i) => '아주긴결과문자열$i');
+    await tester.pumpWidget(MaterialApp(
+        home: LadderResultScreen(participants: names, results: results)));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text(names.first));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.textContaining('${names.first} → '), findsOneWidget);
   });
 
   for (final exit in ['back', 'home']) {
