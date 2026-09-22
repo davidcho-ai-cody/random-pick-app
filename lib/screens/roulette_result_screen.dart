@@ -1,14 +1,15 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/recent_use_service.dart';
 import '../services/ad_service.dart';
 import '../widgets/roulette_wheel.dart';
 
-/// 휠 색상과 무관하게 항상 잘 보이도록 흰 채우기 + 진한 테두리로 그리는
-/// 고정 포인터. 어떤 조각 색 위에 있어도 대비가 유지된다.
+/// 휠의 12시 방향에 고정된 포인터. 끝의 위치는 당첨 계산과 일치해야 한다.
 class _WheelPointer extends StatelessWidget {
   const _WheelPointer();
 
@@ -31,20 +32,25 @@ class _WheelPointerPainter extends CustomPainter {
       ..lineTo(size.width, 0)
       ..close();
 
-    canvas.drawShadow(path, Colors.black, 3, false);
+    canvas.drawShadow(path, const Color(0xFF442687), 4, false);
     canvas.drawPath(
       path,
       Paint()
-        ..color = Colors.white
+        ..color = const Color(0xFF6744C9)
         ..style = PaintingStyle.fill,
     );
     canvas.drawPath(
       path,
       Paint()
-        ..color = Colors.black87
+        ..color = const Color(0xFFE8DFFF)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5
+        ..strokeWidth = 2
         ..strokeJoin = StrokeJoin.round,
+    );
+    canvas.drawCircle(
+      Offset(size.width / 2, 10),
+      5,
+      Paint()..color = const Color(0xFFFFD75E),
     );
   }
 
@@ -71,6 +77,9 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
   double _currentAngle = 0;
   int? _winnerIndex;
   bool _spinning = false;
+  bool _celebrating = false;
+  bool _leaving = false;
+  Timer? _celebrationTimer;
 
   @override
   void initState() {
@@ -83,19 +92,22 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
       vsync: this,
       duration: const Duration(seconds: 4),
     )..addListener(() {
-        setState(() => _currentAngle = _rotation.value);
+        if (mounted) setState(() => _currentAngle = _rotation.value);
       });
     _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
+      if (mounted && status == AnimationStatus.completed) {
         setState(() => _spinning = false);
       }
     });
     // 화면 진입 직후 자동으로 한 번 돌린다.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _spin());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _spin();
+    });
   }
 
   @override
   void dispose() {
+    _celebrationTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -121,12 +133,30 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
     setState(() {
       _winnerIndex = null;
       _spinning = true;
+      _celebrating = false;
     });
+    _celebrationTimer?.cancel();
     _controller
       ..reset()
       ..forward().whenComplete(() {
-        setState(() => _winnerIndex = winner);
+        if (!mounted || _controller.status != AnimationStatus.completed) return;
+        setState(() {
+          _winnerIndex = winner;
+          _celebrating = true;
+        });
+        HapticFeedback.lightImpact();
+        _celebrationTimer = Timer(const Duration(milliseconds: 750), () {
+          if (mounted) setState(() => _celebrating = false);
+        });
       });
+  }
+
+  void _leave(VoidCallback proceed) {
+    if (_leaving) return;
+    _leaving = true;
+    AdService.showThenProceed(() {
+      if (mounted) proceed();
+    });
   }
 
   double _normalize(double angle) {
@@ -137,84 +167,288 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
   @override
   Widget build(BuildContext context) {
     final items = widget.items;
-    final size = MediaQuery.of(context).size;
-    final wheelSize = min(size.width - 64, 320.0);
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        AdService.showThenProceed(() => Navigator.of(context).pop());
+        _leave(() => Navigator.of(context).pop());
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('룰렛 결과')),
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                const Spacer(),
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Transform.rotate(
-                      angle: _currentAngle,
-                      child: RouletteWheel(items: items, size: wheelSize),
-                    ),
-                    const Positioned(
-                      top: -14,
-                      child: _WheelPointer(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  height: 48,
-                  child: _winnerIndex != null
-                      ? Text(
-                          '🎉 ${items[_winnerIndex!]}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        )
-                      : Text(
-                          _spinning ? '돌아가는 중...' : ' ',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                ),
-                const Spacer(),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => AdService.showThenProceed(
-                          () =>
-                              Navigator.of(context).popUntil((r) => r.isFirst),
-                        ),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          child: Text('홈으로'),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: _spinning ? null : _spin,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          child: Text('다시 돌리기'),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: Stack(
+          children: [
+            const Positioned.fill(
+              child: Image(
+                image: AssetImage('assets/images/home_background.png'),
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+              ),
             ),
-          ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: () =>
+                              _leave(() => Navigator.of(context).pop()),
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          tooltip: '뒤로가기',
+                        ),
+                        Expanded(
+                          child: Text(
+                            '룰렛 결과',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  color: const Color(0xFF34256C),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final wheelSize = min(
+                            min(constraints.maxWidth - 24,
+                                constraints.maxHeight * 0.55),
+                            320.0,
+                          );
+                          return SingleChildScrollView(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight),
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    '두근두근 어떤 결과가 나왔을까요?',
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge
+                                        ?.copyWith(
+                                          color: const Color(0xFF615981),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 22),
+                                  Stack(
+                                    clipBehavior: Clip.none,
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Container(
+                                        width: wheelSize,
+                                        height: wheelSize,
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                                color: Color(0x486750E5),
+                                                blurRadius: 26,
+                                                spreadRadius: 3,
+                                                offset: Offset(0, 10)),
+                                          ],
+                                        ),
+                                        child: Transform.rotate(
+                                          angle: _currentAngle,
+                                          child: RouletteWheel(
+                                              items: items, size: wheelSize),
+                                        ),
+                                      ),
+                                      IgnorePointer(
+                                        child: Container(
+                                          width: wheelSize,
+                                          height: wheelSize,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                                color: const Color(0xFFD7C7FF),
+                                                width: 5),
+                                          ),
+                                        ),
+                                      ),
+                                      const IgnorePointer(child: _WheelHub()),
+                                      const Positioned(
+                                          top: -14, child: _WheelPointer()),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 26),
+                                  if (_winnerIndex == null)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Colors.white.withValues(alpha: 0.9),
+                                        borderRadius: BorderRadius.circular(24),
+                                        border: Border.all(
+                                            color: const Color(0xFFE2D7FA)),
+                                      ),
+                                      child: const Text('✨ 두근두근...',
+                                          style: TextStyle(
+                                              color: Color(0xFF5C43B5),
+                                              fontWeight: FontWeight.w700)),
+                                    )
+                                  else
+                                    Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        TweenAnimationBuilder<double>(
+                                          key: ValueKey(_winnerIndex),
+                                          tween: Tween(begin: 0, end: 1),
+                                          duration:
+                                              const Duration(milliseconds: 350),
+                                          curve: Curves.easeOutBack,
+                                          builder: (context, value, child) =>
+                                              Opacity(
+                                            opacity: value.clamp(0.0, 1.0),
+                                            child: Transform.scale(
+                                                scale: 0.92 + 0.08 * value,
+                                                child: child),
+                                          ),
+                                          child: _ResultCard(
+                                              winner: items[_winnerIndex!]),
+                                        ),
+                                        Positioned.fill(
+                                          child: IgnorePointer(
+                                            child: AnimatedOpacity(
+                                              opacity: _celebrating ? 0.4 : 0,
+                                              duration: const Duration(
+                                                  milliseconds: 300),
+                                              child: Image.asset(
+                                                'assets/images/roulette/result_celebration.png',
+                                                fit: BoxFit.contain,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  const SizedBox(height: 12),
+                                  if (_winnerIndex != null)
+                                    Image.asset(
+                                      'assets/images/roulette/result_mascot.png',
+                                      width:
+                                          min(constraints.maxWidth * 0.42, 140),
+                                      height: 86,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  const SizedBox(height: 12),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => _leave(() => Navigator.of(context)
+                                .popUntil((r) => r.isFirst)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF5C43B5),
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.9),
+                              side: const BorderSide(color: Color(0xFFD8C9F4)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18)),
+                              minimumSize: const Size(0, 54),
+                            ),
+                            child: const Text('홈으로',
+                                style: TextStyle(fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: _spinning ? null : _spin,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFF6750E5),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18)),
+                              minimumSize: const Size(0, 54),
+                            ),
+                            child: const Text('다시 돌리기',
+                                style: TextStyle(fontWeight: FontWeight.w800)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _WheelHub extends StatelessWidget {
+  const _WheelHub();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFFF9F6FF),
+          border: Border.all(color: const Color(0xFFD6C7F4), width: 2),
+          boxShadow: const [BoxShadow(color: Color(0x446750E5), blurRadius: 8)],
+        ),
+        child:
+            const Icon(Icons.star_rounded, color: Color(0xFFFFC83D), size: 24),
+      );
+}
+
+class _ResultCard extends StatelessWidget {
+  const _ResultCard({required this.winner});
+  final String winner;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFD8C9F4)),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x246750E5), blurRadius: 18, offset: Offset(0, 8))
+          ],
+        ),
+        child: Column(
+          children: [
+            const Text('오늘의 선택은',
+                style: TextStyle(
+                    color: Color(0xFF615981), fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text('🎉 $winner',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: const Color(0xFF34256C),
+                    fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            const Text('좋은 하루가 시작될 거예요! 💜',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xFF615981))),
+          ],
+        ),
+      );
 }

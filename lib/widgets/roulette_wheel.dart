@@ -3,14 +3,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 const List<Color> kWheelColors = [
-  Color(0xFF6750E5),
-  Color(0xFFE55B6C),
-  Color(0xFFF2A93C),
-  Color(0xFF3CB89E),
-  Color(0xFF3C8CE5),
-  Color(0xFFB05BE5),
-  Color(0xFFE5C33C),
-  Color(0xFF5BE0A0),
+  Color(0xFF7656DD),
+  Color(0xFFF07891),
+  Color(0xFFF5B74E),
+  Color(0xFF51C7AE),
+  Color(0xFF589EEB),
+  Color(0xFFAF78DF),
+  Color(0xFFE8C75C),
+  Color(0xFF68CEBE),
 ];
 
 /// 회전각(라디안)을 받아 그리는 룰렛 휠. 실제 회전 애니메이션은
