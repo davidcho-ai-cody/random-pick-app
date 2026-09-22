@@ -27,6 +27,7 @@ flutter:
     - assets/icon/
     - assets/images/
     - assets/images/roulette/
+    - assets/images/ladder/
 
 flutter_launcher_icons:
   android: true

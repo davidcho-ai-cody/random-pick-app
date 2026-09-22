@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/ladder_board.dart';
 import '../services/ad_service.dart';
+import '../services/recent_use_service.dart';
 import '../widgets/ladder_painter.dart';
 
 /// 사다리를 생성하고, 참가자를 선택하면 해당 경로를 강조해서 보여주는 화면.
@@ -33,6 +35,11 @@ class _LadderResultScreenState extends State<LadderResultScreen>
       duration: const Duration(milliseconds: 800),
     );
     _generateBoard();
+    // 생성된 사다리에 진입한 조합만 한 번 기록한다. 재생성은 저장하지 않는다.
+    SharedPreferences.getInstance()
+        .then((prefs) => RecentUseService(prefs)
+            .saveLadder(widget.participants, widget.results))
+        .catchError((Object _) => false);
   }
 
   @override

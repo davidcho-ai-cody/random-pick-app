@@ -74,4 +74,72 @@ void main() {
         ]));
     expect(service.read(GameMode.roulette).map((e) => e.id), ['3']);
   });
+
+  test('legacy roulette JSON survives ladder save', () async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        RecentUseService.storageKey,
+        jsonEncode([
+          {
+            'id': 'old',
+            'mode': 'roulette',
+            'items': ['치킨', '피자'],
+            'createdAt': '2026-01-01T00:00:00Z'
+          }
+        ]));
+    final service = RecentUseService(prefs);
+    expect(await service.saveLadder(['철수', '영희'], ['꽝', '당첨']), isTrue);
+    expect(service.read(GameMode.roulette).single.items, ['치킨', '피자']);
+    expect(service.read(GameMode.ladder).single.participants, ['철수', '영희']);
+  });
+
+  test('ladder dedupe, newest order, and per-mode limit', () async {
+    final prefs = await SharedPreferences.getInstance();
+    var tick = 0;
+    final service = RecentUseService(prefs,
+        clock: () => DateTime.utc(2026, 1, 1).add(Duration(minutes: tick++)));
+    await service.saveRoulette(['A', 'B']);
+    await service.saveLadder(['철수', '영희'], ['꽝', '당첨']);
+    await service.saveLadder(['민수', '지훈'], ['휴식', '청소']);
+    await service.saveLadder(['철수', '영희'], ['꽝', '당첨']);
+    expect(
+        service.read(GameMode.ladder).map((entry) => entry.participants.first),
+        ['철수', '민수']);
+    expect(service.read(GameMode.ladder).length, 2);
+    for (var i = 0; i < 12; i++) {
+      await service.saveLadder(['참가자$i', '상대$i'], ['꽝', '당첨']);
+    }
+    expect(service.read(GameMode.ladder).length, 10);
+    expect(service.read(GameMode.ladder).first.participants.first, '참가자11');
+    expect(service.read(GameMode.roulette).single.items, ['A', 'B']);
+  });
+
+  test('invalid ladder payload is skipped', () async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        RecentUseService.storageKey,
+        jsonEncode([
+          {
+            'id': 'bad',
+            'mode': 'ladder',
+            'createdAt': '2026-01-01T00:00:00Z',
+            'payload': {
+              'participants': ['A', 'B'],
+              'results': ['X']
+            }
+          },
+          {
+            'id': 'good',
+            'mode': 'ladder',
+            'createdAt': '2026-01-01T00:00:00Z',
+            'payload': {
+              'participants': ['A', 'B'],
+              'results': ['X', 'Y']
+            }
+          },
+        ]));
+    expect(
+        RecentUseService(prefs).read(GameMode.ladder).map((entry) => entry.id),
+        ['good']);
+  });
 }

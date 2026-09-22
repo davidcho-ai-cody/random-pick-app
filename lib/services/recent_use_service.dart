@@ -25,16 +25,51 @@ class RecentUseService {
         items.any((item) => item.isEmpty || item != item.trim())) {
       return false;
     }
+    return _save(
+      GameMode.roulette,
+      (now) => RecentUse(
+        id: '${now.microsecondsSinceEpoch}',
+        mode: GameMode.roulette,
+        items: List.unmodifiable(items),
+        createdAt: now,
+      ),
+      (entry) => _sameItems(entry.items, items),
+    );
+  }
+
+  Future<bool> saveLadder(
+      List<String> participants, List<String> results) async {
+    if (participants.length < 2 ||
+        participants.length > 10 ||
+        participants.length != results.length ||
+        [...participants, ...results]
+            .any((value) => value.isEmpty || value != value.trim())) {
+      return false;
+    }
+    return _save(
+      GameMode.ladder,
+      (now) => RecentUse(
+        id: '${now.microsecondsSinceEpoch}',
+        mode: GameMode.ladder,
+        participants: List.unmodifiable(participants),
+        results: List.unmodifiable(results),
+        createdAt: now,
+      ),
+      (entry) =>
+          _sameItems(entry.participants, participants) &&
+          _sameItems(entry.results, results),
+    );
+  }
+
+  Future<bool> _save(
+    GameMode mode,
+    RecentUse Function(DateTime now) create,
+    bool Function(RecentUse entry) matches,
+  ) async {
     final now = _clock().toUtc();
     final entries = _readAll()
-      ..removeWhere((entry) =>
-          entry.mode == GameMode.roulette && _sameItems(entry.items, items));
-    entries.add(RecentUse(
-      id: '${now.microsecondsSinceEpoch}',
-      mode: GameMode.roulette,
-      items: List.unmodifiable(items),
-      createdAt: now,
-    ));
+      ..removeWhere((entry) => entry.mode == mode && matches(entry));
+    entries.add(create(now));
     entries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final counts = <GameMode, int>{};
     final kept = <RecentUse>[];
