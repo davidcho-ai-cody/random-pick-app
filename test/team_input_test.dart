@@ -148,6 +148,22 @@ void main() {
     await tester.pump();
     expect(
         service.read(GameMode.team).single.participants, ['A', 'B', 'C', 'D']);
+    expect(find.text('두근두근, 팀을 공개할게요!'), findsOneWidget);
+    expect(find.text('팀 나누기 완료! 🎉'), findsNothing);
+    expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage)
+                .assetName
+                .endsWith('team_result_mascot.png')),
+        findsNothing);
+    expect(
+        tester
+            .widget<FilledButton>(find.ancestor(
+                of: find.text('다시 나누기'), matching: find.byType(FilledButton)))
+            .onPressed,
+        isNull);
     expect(find.text('?'), findsNWidgets(4));
     await tester.pump(const Duration(milliseconds: 449));
     expect(find.text('?'), findsNWidgets(4));
@@ -159,13 +175,64 @@ void main() {
     await tester.pump(const Duration(milliseconds: 250));
     final firstId = service.read(GameMode.team).single.id;
     expect(find.text('?'), findsNothing);
+    expect(find.text('팀 나누기 완료! 🎉'), findsOneWidget);
+    expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Image &&
+            widget.image is AssetImage &&
+            (widget.image as AssetImage)
+                .assetName
+                .endsWith('team_result_mascot.png')),
+        findsOneWidget);
+    expect(
+        tester
+            .widget<FilledButton>(find.ancestor(
+                of: find.text('다시 나누기'), matching: find.byType(FilledButton)))
+            .onPressed,
+        isNotNull);
     await tester.tap(find.text('다시 나누기'));
     await tester.pump();
     expect(find.text('?'), findsNWidgets(4));
+    expect(find.text('두근두근, 팀을 공개할게요!'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.text('팀 나누기 완료! 🎉'), findsNothing);
     for (var i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 450));
     }
     await tester.pump(const Duration(milliseconds: 250));
     expect(service.read(GameMode.team).single.id, firstId);
+  });
+
+  testWidgets('eight participants in three teams scroll without overflow',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final participants = List.generate(8, (i) => '아주긴참가자이름$i');
+    await tester.pumpWidget(MaterialApp(
+      home: TeamResultScreen(participants: participants, teamCount: 3),
+    ));
+    expect(find.text('?'), findsNWidgets(8));
+    expect(tester.takeException(), isNull);
+    for (var i = 0; i < participants.length; i++) {
+      await tester.pump(const Duration(milliseconds: 450));
+    }
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('팀 나누기 완료! 🎉'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('leaving during reveal does not update disposed result',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: TeamResultScreen(participants: ['A', 'B', 'C', 'D'], teamCount: 2),
+    ));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+    await tester.pump(const Duration(milliseconds: 450));
+    expect(tester.takeException(), isNull);
   });
 }

@@ -29,6 +29,8 @@ flutter:
     - assets/images/roulette/
     - assets/images/ladder/
     - assets/images/team/team_header.png
+    - assets/images/team/team_result_mascot.png
+    - assets/images/team/team_reveal_sparkle.png
 
 flutter_launcher_icons:
   android: true

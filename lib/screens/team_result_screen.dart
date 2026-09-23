@@ -4,9 +4,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/team_split.dart';
 import '../services/ad_service.dart';
 import '../services/recent_use_service.dart';
-import '../widgets/roulette_wheel.dart' show kWheelColors;
 
-/// 참가자를 팀으로 나눈 결과를 보여주는 화면.
+const _teamPalette = <Color>[
+  Color(0xFF7555D9),
+  Color(0xFFE86F8D),
+  Color(0xFFE6A13A),
+  Color(0xFF43A886),
+  Color(0xFF4E91D9),
+  Color(0xFF9168D9),
+  Color(0xFFE98252),
+  Color(0xFF2C9FA5),
+];
+
+/// 참가자를 팀으로 나눈 결과를 한 명씩 공개하는 화면.
 class TeamResultScreen extends StatefulWidget {
   const TeamResultScreen({
     super.key,
@@ -46,19 +56,18 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
     _runReveal();
   }
 
-  /// 팀별로 한 명씩 번갈아(라운드로빈) 공개해서 긴장감을 준다.
+  /// 기존 cadence와 라운드로빈 공개 순서를 유지한다.
   Future<void> _runReveal() async {
     var maxSize = 0;
     for (final team in _teams) {
       if (team.length > maxSize) maxSize = team.length;
     }
-
     for (var round = 0; round < maxSize; round++) {
-      for (var i = 0; i < _teams.length; i++) {
-        if (round >= _teams[i].length) continue;
+      for (var teamIndex = 0; teamIndex < _teams.length; teamIndex++) {
+        if (round >= _teams[teamIndex].length) continue;
         await Future.delayed(const Duration(milliseconds: 450));
         if (!mounted) return;
-        setState(() => _revealedCounts[i]++);
+        setState(() => _revealedCounts[teamIndex]++);
       }
     }
     if (mounted) setState(() => _revealing = false);
@@ -73,58 +82,126 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
         AdService.showThenProceed(() => Navigator.of(context).pop());
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('팀나누기 결과')),
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              children: [
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: _teams.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 16),
-                    itemBuilder: (context, index) {
-                      final color = kWheelColors[index % kWheelColors.length];
-                      return _TeamCard(
-                        teamName: '${index + 1}팀',
-                        members: _teams[index],
-                        revealedCount: _revealedCounts[index],
-                        color: color,
-                      );
-                    },
-                  ),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: Stack(children: [
+          const Positioned.fill(
+            child: Image(
+              image: AssetImage('assets/images/home_background.png'),
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+          ),
+          SafeArea(
+            child: Column(children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 24, 4),
+                child: SizedBox(
+                  height: 52,
+                  child: Row(children: [
+                    IconButton(
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      tooltip: '뒤로가기',
+                      color: const Color(0xFF34256C),
+                    ),
+                    const SizedBox(width: 4),
+                    const Expanded(
+                      child: Text('팀나누기 결과',
+                          style: TextStyle(
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF34256C))),
+                    ),
+                  ]),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
+              ),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: Text(
+                  _revealing ? '두근두근, 팀을 공개할게요!' : '팀 나누기 완료! 🎉',
+                  key: ValueKey(_revealing),
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF4C358D)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(24, 2, 24, 12),
+                  itemCount: _teams.length + (_revealing ? 0 : 1),
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    if (index == _teams.length) {
+                      return TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: 1),
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, child) => Opacity(
+                          opacity: value,
+                          child: Transform.scale(
+                              scale: 0.94 + value * 0.06, child: child),
+                        ),
+                        child: SizedBox(
+                          height: 116,
+                          child: Image.asset(
+                            'assets/images/team/team_result_mascot.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      );
+                    }
+                    return _TeamCard(
+                      teamName: '${index + 1}팀',
+                      members: _teams[index],
+                      revealedCount: _revealedCounts[index],
+                      color: _teamPalette[index % _teamPalette.length],
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
+                child: SizedBox(
+                  height: 56,
+                  child: Row(children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => AdService.showThenProceed(
-                          () =>
-                              Navigator.of(context).popUntil((r) => r.isFirst),
+                        onPressed: () => AdService.showThenProceed(() =>
+                            Navigator.of(context)
+                                .popUntil((route) => route.isFirst)),
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.92),
+                          foregroundColor: const Color(0xFF5C43B5),
+                          side: const BorderSide(color: Color(0xFFCFC2F5)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(17)),
                         ),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          child: Text('홈으로'),
-                        ),
+                        child: const Text('홈으로',
+                            style: TextStyle(fontWeight: FontWeight.w800)),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: FilledButton(
                         onPressed: _revealing ? null : _shuffle,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 14),
-                          child: Text('다시 나누기'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF6750E5),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(17)),
                         ),
+                        child: const Text('다시 나누기',
+                            style: TextStyle(fontWeight: FontWeight.w800)),
                       ),
                     ),
-                  ],
+                  ]),
                 ),
-              ],
-            ),
+              ),
+            ]),
           ),
-        ),
+        ]),
       ),
     );
   }
@@ -144,87 +221,127 @@ class _TeamCard extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            teamName,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                ),
-          ),
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(color.withValues(alpha: 0.11),
+              Colors.white.withValues(alpha: 0.92)),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.38), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+                color: color.withValues(alpha: 0.13),
+                blurRadius: 14,
+                offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(teamName,
+              style: TextStyle(
+                  fontSize: 17, fontWeight: FontWeight.w800, color: color)),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (var i = 0; i < members.length; i++)
-                if (i < revealedCount)
+              for (var memberIndex = 0;
+                  memberIndex < members.length;
+                  memberIndex++)
+                if (memberIndex < revealedCount)
                   _RevealedChip(
-                    key: ValueKey(members[i]),
-                    label: members[i],
+                    key: ValueKey(
+                        '${teamName}_${members[memberIndex]}_$memberIndex'),
+                    label: members[memberIndex],
                     color: color,
                   )
                 else
-                  _PlaceholderChip(color: color),
+                  _PlaceholderChip(
+                      key: ValueKey('${teamName}_hidden_$memberIndex'),
+                      color: color),
             ],
           ),
-        ],
-      ),
-    );
-  }
+        ]),
+      );
 }
 
-/// 새로 공개되는 멤버가 톡 튀어나오는 느낌을 주는 팝인 애니메이션.
 class _RevealedChip extends StatelessWidget {
   const _RevealedChip({super.key, required this.label, required this.color});
-
   final String label;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
+    final maxLabelWidth =
+        (MediaQuery.sizeOf(context).width - 112).clamp(96.0, 240.0);
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutBack,
-      builder: (context, t, child) {
+      builder: (context, value, child) {
+        final opacity = value.clamp(0.0, 1.0);
+        final sparkleOpacity = (4 * opacity * (1 - opacity)).clamp(0.0, 1.0);
         return Opacity(
-          opacity: t.clamp(0.0, 1.0),
-          child: Transform.scale(scale: t, child: child),
+          opacity: opacity,
+          child: Transform.scale(
+            scale: value,
+            child: Stack(alignment: Alignment.center, children: [
+              child!,
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: sparkleOpacity,
+                    child: Image.asset(
+                      'assets/images/team/team_reveal_sparkle.png',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+            ]),
+          ),
         );
       },
-      child: Chip(
-        label: Text(label),
-        backgroundColor: color.withValues(alpha: 0.18),
-        side: BorderSide.none,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.16),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxLabelWidth),
+          child: Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                  color: Color(0xFF34256C), fontWeight: FontWeight.w700)),
+        ),
       ),
     );
   }
 }
 
-/// 아직 공개되지 않은 자리. 몇 명이 남았는지는 보이되 누군지는 숨긴다.
 class _PlaceholderChip extends StatelessWidget {
-  const _PlaceholderChip({required this.color});
-
+  const _PlaceholderChip({super.key, required this.color});
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Chip(
-      label: Text('?', style: TextStyle(color: color.withValues(alpha: 0.5))),
-      backgroundColor: color.withValues(alpha: 0.06),
-      side: BorderSide(color: color.withValues(alpha: 0.25)),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+        width: 48,
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.055),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 7),
+          ],
+        ),
+        child: Text('?',
+            style: TextStyle(
+                color: color.withValues(alpha: 0.58),
+                fontWeight: FontWeight.w800)),
+      );
 }
