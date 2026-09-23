@@ -26,6 +26,7 @@ flutter:
   assets:
     - assets/icon/
     - assets/images/
+    - assets/images/branding/
     - assets/images/roulette/
     - assets/images/ladder/
     - assets/images/team/team_header.png
@@ -34,15 +35,19 @@ flutter:
 
 flutter_launcher_icons:
   android: true
-  ios: true
-  image_path: "assets/icon/icon.png"
-  adaptive_icon_background: "#6750E5"
-  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
+  ios: false
+  image_path: "assets/images/branding/app_icon.png"
+  adaptive_icon_background: "#F7F5FC"
+  adaptive_icon_foreground: "assets/images/branding/app_icon_adaptive.png"
+  adaptive_icon_foreground_inset: 0
   remove_alpha_ios: true
 
 flutter_native_splash:
+  android: true
+  ios: false
+  web: false
   color: "#F7F5FC"
-  image: assets/icon/splash_logo.png
+  image: assets/images/branding/app_icon_adaptive.png
   android_12:
     color: "#F7F5FC"
-    image: assets/icon/splash_logo.png
+    image: assets/images/branding/app_icon_adaptive.png
