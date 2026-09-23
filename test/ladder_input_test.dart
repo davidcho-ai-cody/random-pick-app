@@ -59,7 +59,8 @@ void main() {
     await tester.tap(find.text('최근 사용'));
     await tester.pumpAndSettle();
     expect(find.textContaining('아직 사용한 사다리가 없어요.'), findsOneWidget);
-    await tester.tap(find.text('닫기'));
+    expect(find.byTooltip('닫기'), findsOneWidget);
+    await tester.tap(find.byTooltip('닫기'));
     await tester.pumpAndSettle();
 
     final prefs = await SharedPreferences.getInstance();
@@ -67,6 +68,7 @@ void main() {
         '[{"id":"1","mode":"ladder","createdAt":"2026-01-01T00:00:00Z","payload":{"participants":["철수","영희"],"results":["꽝","당첨"]}}]');
     await tester.tap(find.text('최근 사용'));
     await tester.pumpAndSettle();
+    expect(find.byTooltip('닫기'), findsOneWidget);
     await tester.tap(find.text('불러오기'));
     await tester.pumpAndSettle();
     final values = tester
@@ -167,6 +169,32 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.textContaining('${names.first} → '), findsOneWidget);
+  });
+
+  testWidgets('result celebration is enlarged and ignores pointer events',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home:
+          LadderResultScreen(participants: ['철수', '영희'], results: ['꽝', '당첨']),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('철수'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1700));
+    await tester.pump();
+
+    final sparkle = find.byWidgetPredicate((widget) =>
+        widget is Image &&
+        widget.image is AssetImage &&
+        (widget.image as AssetImage)
+            .assetName
+            .endsWith('ladder_result_sparkle.png'));
+    expect(sparkle, findsOneWidget);
+    expect(tester.getSize(sparkle), const Size(72, 72));
+    final pointerGuards = tester.widgetList<IgnorePointer>(
+      find.ancestor(of: sparkle, matching: find.byType(IgnorePointer)),
+    );
+    expect(pointerGuards.any((guard) => guard.ignoring), isTrue);
   });
 
   for (final exit in ['back', 'home']) {

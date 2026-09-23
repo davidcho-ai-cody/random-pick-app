@@ -84,7 +84,10 @@ void main() {
 
     await tester.tap(find.byTooltip('앱 종료'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('종료'));
+    await tester.tap(find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.text('종료'),
+    ));
     await tester.pumpAndSettle();
 
     expect(exitCount, 1);
@@ -139,5 +142,6 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('랜덤픽'), findsOneWidget);
     expect(find.byTooltip('앱 종료'), findsOneWidget);
+    expect(find.text('종료'), findsOneWidget);
   });
 }

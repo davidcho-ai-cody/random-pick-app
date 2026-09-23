@@ -57,6 +57,10 @@ void main() {
     await tester.tap(find.text('최근 사용'));
     await tester.pumpAndSettle();
     expect(find.textContaining('아직 최근 사용이 없어요'), findsOneWidget);
+    expect(find.byTooltip('닫기'), findsOneWidget);
+    await tester.tap(find.byTooltip('닫기'));
+    await tester.pumpAndSettle();
+    expect(find.text('최근 사용'), findsOneWidget);
   });
 
   testWidgets('recent history loads saved fields', (tester) async {
@@ -67,6 +71,7 @@ void main() {
     await open(tester);
     await tester.tap(find.text('최근 사용'));
     await tester.pumpAndSettle();
+    expect(find.byTooltip('닫기'), findsOneWidget);
     await tester.tap(find.text('불러오기'));
     await tester.pumpAndSettle();
     final fields =

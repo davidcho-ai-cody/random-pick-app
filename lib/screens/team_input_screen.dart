@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/game_mode.dart';
@@ -16,6 +17,7 @@ class TeamInputScreen extends StatefulWidget {
 }
 
 class _TeamInputScreenState extends State<TeamInputScreen> {
+  static const _maxNameLength = 8;
   static const _maxParticipants = 20;
   static const _minTeamCount = 2;
   static const _maxTeamCount = 8;
@@ -81,7 +83,8 @@ class _TeamInputScreenState extends State<TeamInputScreen> {
     setState(() {
       _controllers
         ..clear()
-        ..addAll(participants.map((name) => TextEditingController(text: name)));
+        ..addAll(participants
+            .map((name) => TextEditingController(text: _truncateName(name))));
       _teamCount = teamCount.clamp(
           _minTeamCount, min(_maxTeamCount, participants.length));
     });
@@ -91,6 +94,9 @@ class _TeamInputScreenState extends State<TeamInputScreen> {
       }
     });
   }
+
+  String _truncateName(String name) =>
+      name.characters.take(_maxNameLength).toString();
 
   Future<void> _randomFill() async {
     if (_hasInput && !await _confirmReplace('현재 입력 내용을 랜덤 참가자로 바꿀까요?', '바꾸기')) {
@@ -333,6 +339,7 @@ class _ParticipantField extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
+              inputFormatters: [LengthLimitingTextInputFormatter(8)],
               textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 hintText: '참가자 ${index + 1}',
@@ -414,10 +421,19 @@ class _RecentTeamSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('최근 사용',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF34256C))),
+              Row(children: [
+                Expanded(
+                  child: Text('최근 사용',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF34256C))),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                  tooltip: '닫기',
+                ),
+              ]),
               const SizedBox(height: 16),
               if (entries.isEmpty)
                 const Expanded(
@@ -478,13 +494,6 @@ class _RecentTeamSheet extends StatelessWidget {
                       );
                     },
                   ),
-                ),
-              if (entries.isEmpty)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('닫기')),
                 ),
             ]),
           ),

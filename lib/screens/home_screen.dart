@@ -104,11 +104,27 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                           ),
                         ),
-                        IconButton(
-                          onPressed: _requestExit,
-                          tooltip: '앱 종료',
-                          color: const Color(0xFF615981),
-                          icon: const Icon(Icons.power_settings_new_rounded),
+                        Tooltip(
+                          message: '앱 종료',
+                          child: Semantics(
+                            label: '앱 종료',
+                            button: true,
+                            excludeSemantics: true,
+                            child: TextButton.icon(
+                              onPressed: _requestExit,
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFF615981),
+                                minimumSize: const Size(72, 48),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                              icon: const Icon(Icons.power_settings_new_rounded,
+                                  size: 20),
+                              label: const Text('종료',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.w700)),
+                            ),
+                          ),
                         ),
                       ],
                     ),

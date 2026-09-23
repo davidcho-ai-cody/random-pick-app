@@ -39,7 +39,7 @@ flutter_launcher_icons:
   image_path: "assets/images/branding/app_icon.png"
   adaptive_icon_background: "#F7F5FC"
   adaptive_icon_foreground: "assets/images/branding/app_icon_adaptive.png"
-  adaptive_icon_foreground_inset: 0
+  adaptive_icon_foreground_inset: 10
   remove_alpha_ios: true
 
 flutter_native_splash:
@@ -47,7 +47,7 @@ flutter_native_splash:
   ios: false
   web: false
   color: "#F7F5FC"
-  image: assets/images/branding/app_icon_adaptive.png
+  image: assets/images/branding/splash_bridge.png
   android_12:
     color: "#F7F5FC"
-    image: assets/images/branding/app_icon_adaptive.png
+    image: assets/images/branding/splash_bridge.png

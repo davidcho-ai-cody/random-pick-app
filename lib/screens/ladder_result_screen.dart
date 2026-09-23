@@ -233,8 +233,8 @@ class _LadderResultScreenState extends State<LadderResultScreen>
                                     child: IgnorePointer(
                                         child: Image.asset(
                                             'assets/images/ladder/ladder_result_sparkle.png',
-                                            width: 52,
-                                            height: 52,
+                                            width: 72,
+                                            height: 72,
                                             fit: BoxFit.contain))),
                             ]),
                           );

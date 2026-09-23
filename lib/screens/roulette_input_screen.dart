@@ -94,11 +94,22 @@ class _RouletteInputScreenState extends State<RouletteInputScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('최근 사용',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(fontWeight: FontWeight.w800)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('최근 사용',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w800)),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded),
+                      tooltip: '닫기',
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 16),
                 if (entries.isEmpty)
                   const Expanded(
@@ -162,12 +173,6 @@ class _RouletteInputScreenState extends State<RouletteInputScreen> {
                       },
                     ),
                   ),
-                if (entries.isEmpty)
-                  Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('닫기'))),
               ],
             ),
           ),

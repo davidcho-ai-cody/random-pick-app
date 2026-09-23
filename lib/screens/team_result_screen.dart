@@ -56,7 +56,7 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
     _runReveal();
   }
 
-  /// 기존 cadence와 라운드로빈 공개 순서를 유지한다.
+  /// 기존 라운드로빈 공개 순서를 유지하면서 공개 간격만 조정한다.
   Future<void> _runReveal() async {
     var maxSize = 0;
     for (final team in _teams) {
@@ -65,7 +65,7 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
     for (var round = 0; round < maxSize; round++) {
       for (var teamIndex = 0; teamIndex < _teams.length; teamIndex++) {
         if (round >= _teams[teamIndex].length) continue;
-        await Future.delayed(const Duration(milliseconds: 450));
+        await Future.delayed(const Duration(milliseconds: 560));
         if (!mounted) return;
         setState(() => _revealedCounts[teamIndex]++);
       }
@@ -153,6 +153,7 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
                       );
                     }
                     return _TeamCard(
+                      key: ValueKey('team-card-$index'),
                       teamName: '${index + 1}팀',
                       members: _teams[index],
                       revealedCount: _revealedCounts[index],
@@ -209,6 +210,7 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
 
 class _TeamCard extends StatelessWidget {
   const _TeamCard({
+    super.key,
     required this.teamName,
     required this.members,
     required this.revealedCount,
@@ -248,100 +250,99 @@ class _TeamCard extends StatelessWidget {
               for (var memberIndex = 0;
                   memberIndex < members.length;
                   memberIndex++)
-                if (memberIndex < revealedCount)
-                  _RevealedChip(
-                    key: ValueKey(
-                        '${teamName}_${members[memberIndex]}_$memberIndex'),
-                    label: members[memberIndex],
-                    color: color,
-                  )
-                else
-                  _PlaceholderChip(
-                      key: ValueKey('${teamName}_hidden_$memberIndex'),
-                      color: color),
+                _MemberChip(
+                  key: ValueKey('${teamName}_member_$memberIndex'),
+                  label: members[memberIndex],
+                  color: color,
+                  revealed: memberIndex < revealedCount,
+                ),
             ],
           ),
         ]),
       );
 }
 
-class _RevealedChip extends StatelessWidget {
-  const _RevealedChip({super.key, required this.label, required this.color});
+class _MemberChip extends StatelessWidget {
+  const _MemberChip({
+    super.key,
+    required this.label,
+    required this.color,
+    required this.revealed,
+  });
   final String label;
   final Color color;
+  final bool revealed;
 
   @override
   Widget build(BuildContext context) {
     final maxLabelWidth =
         (MediaQuery.sizeOf(context).width - 112).clamp(96.0, 240.0);
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOutBack,
-      builder: (context, value, child) {
-        final opacity = value.clamp(0.0, 1.0);
-        final sparkleOpacity = (4 * opacity * (1 - opacity)).clamp(0.0, 1.0);
-        return Opacity(
-          opacity: opacity,
-          child: Transform.scale(
-            scale: value,
-            child: Stack(alignment: Alignment.center, children: [
-              child!,
+    final labelText = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+          color: Color(0xFF34256C), fontWeight: FontWeight.w700),
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: revealed ? 0.16 : 0.055),
+        borderRadius: BorderRadius.circular(20),
+        border:
+            Border.all(color: color.withValues(alpha: revealed ? 0.25 : 0.28)),
+        boxShadow: revealed
+            ? null
+            : [BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 7)],
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxLabelWidth),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Opacity(opacity: 0, child: labelText),
+            if (!revealed)
+              Text('?',
+                  style: TextStyle(
+                      color: color.withValues(alpha: 0.58),
+                      fontWeight: FontWeight.w800))
+            else
               Positioned.fill(
-                child: IgnorePointer(
-                  child: Opacity(
-                    opacity: sparkleOpacity,
-                    child: Image.asset(
-                      'assets/images/team/team_reveal_sparkle.png',
-                      fit: BoxFit.contain,
-                    ),
-                  ),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOutBack,
+                  builder: (context, value, child) {
+                    final opacity = value.clamp(0.0, 1.0);
+                    final sparkleOpacity =
+                        (4 * opacity * (1 - opacity)).clamp(0.0, 1.0);
+                    return Opacity(
+                      opacity: opacity,
+                      child: Transform.scale(
+                        scale: value,
+                        child: Stack(alignment: Alignment.center, children: [
+                          child!,
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: Opacity(
+                                opacity: sparkleOpacity,
+                                child: Image.asset(
+                                  'assets/images/team/team_reveal_sparkle.png',
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ]),
+                      ),
+                    );
+                  },
+                  child: Center(child: labelText),
                 ),
               ),
-            ]),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.16),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.25)),
-        ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxLabelWidth),
-          child: Text(label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  color: Color(0xFF34256C), fontWeight: FontWeight.w700)),
+          ],
         ),
       ),
     );
   }
-}
-
-class _PlaceholderChip extends StatelessWidget {
-  const _PlaceholderChip({super.key, required this.color});
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        width: 48,
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.055),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withValues(alpha: 0.28)),
-          boxShadow: [
-            BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 7),
-          ],
-        ),
-        child: Text('?',
-            style: TextStyle(
-                color: color.withValues(alpha: 0.58),
-                fontWeight: FontWeight.w800)),
-      );
 }
