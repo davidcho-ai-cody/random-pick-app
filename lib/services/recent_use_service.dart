@@ -61,6 +61,29 @@ class RecentUseService {
     );
   }
 
+  Future<bool> saveTeam(List<String> participants, int teamCount) async {
+    if (teamCount < 2 ||
+        teamCount > 8 ||
+        participants.length < teamCount ||
+        participants.length > 20 ||
+        participants.any((value) => value.isEmpty || value != value.trim())) {
+      return false;
+    }
+    return _save(
+      GameMode.team,
+      (now) => RecentUse(
+        id: '${now.microsecondsSinceEpoch}',
+        mode: GameMode.team,
+        participants: List.unmodifiable(participants),
+        teamCount: teamCount,
+        createdAt: now,
+      ),
+      (entry) =>
+          entry.teamCount == teamCount &&
+          _sameItems(entry.participants, participants),
+    );
+  }
+
   Future<bool> _save(
     GameMode mode,
     RecentUse Function(DateTime now) create,

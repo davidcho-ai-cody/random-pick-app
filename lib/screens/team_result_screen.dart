@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/team_split.dart';
 import '../services/ad_service.dart';
+import '../services/recent_use_service.dart';
 import '../widgets/roulette_wheel.dart' show kWheelColors;
 
 /// 참가자를 팀으로 나눈 결과를 보여주는 화면.
@@ -28,6 +30,10 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
   void initState() {
     super.initState();
     _shuffle();
+    SharedPreferences.getInstance()
+        .then((prefs) => RecentUseService(prefs)
+            .saveTeam(widget.participants, widget.teamCount))
+        .catchError((Object _) => false);
   }
 
   void _shuffle() {

@@ -28,6 +28,7 @@ flutter:
     - assets/images/
     - assets/images/roulette/
     - assets/images/ladder/
+    - assets/images/team/team_header.png
 
 flutter_launcher_icons:
   android: true

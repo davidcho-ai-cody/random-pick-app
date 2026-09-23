@@ -142,4 +142,31 @@ void main() {
         RecentUseService(prefs).read(GameMode.ladder).map((entry) => entry.id),
         ['good']);
   });
+
+  test('team stores participants and count with newest dedupe and limit',
+      () async {
+    final prefs = await SharedPreferences.getInstance();
+    var tick = 0;
+    final service = RecentUseService(prefs,
+        clock: () => DateTime.utc(2026, 1, 1).add(Duration(minutes: tick++)));
+    expect(await service.saveTeam(['철수', '영희'], 2), isTrue);
+    await service.saveTeam(['민수', '지수', '서준'], 2);
+    await service.saveTeam(['철수', '영희'], 2);
+    final initial = service.read(GameMode.team);
+    expect(initial.map((entry) => entry.participants.first), ['철수', '민수']);
+    expect(initial.first.teamCount, 2);
+    for (var i = 0; i < 12; i++) {
+      await service.saveTeam(['참가자$i', '상대$i'], 2);
+    }
+    expect(service.read(GameMode.team).length, 10);
+    expect(service.read(GameMode.team).first.participants.first, '참가자11');
+  });
+
+  test('team validation rejects invalid count and untrimmed participants',
+      () async {
+    final service = RecentUseService(await SharedPreferences.getInstance());
+    expect(await service.saveTeam(['A', 'B'], 3), isFalse);
+    expect(await service.saveTeam([' A', 'B'], 2), isFalse);
+    expect(service.read(GameMode.team), isEmpty);
+  });
 }
