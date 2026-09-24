@@ -29,6 +29,23 @@ void main() {
     expect(tester.widget<IconButton>(removeButton.first).onPressed, isNull);
   });
 
+  testWidgets('placeholder and entered item use distinct text styles',
+      (tester) async {
+    await open(tester);
+    final finder = find.byType(TextField).first;
+    final initial = tester.widget<TextField>(finder);
+
+    expect(initial.controller!.text, isEmpty);
+    expect(initial.decoration!.hintText, '항목 1');
+    expect(initial.decoration!.hintStyle!.color, const Color(0xFF9B98A6));
+    expect(initial.decoration!.hintStyle!.fontWeight, FontWeight.w400);
+    expect(initial.style!.color, const Color(0xFF342F45));
+    expect(initial.style!.fontWeight, FontWeight.w500);
+
+    await tester.enterText(finder, '치킨');
+    expect(tester.widget<TextField>(finder).controller!.text, '치킨');
+  });
+
   testWidgets('requires two nonempty trimmed items', (tester) async {
     await open(tester);
     await tester.enterText(find.byType(TextField).first, '  치킨  ');

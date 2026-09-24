@@ -466,8 +466,12 @@ class _PairField extends StatelessWidget {
   Widget build(BuildContext context) => TextField(
         controller: controller,
         textInputAction: TextInputAction.next,
+        style: const TextStyle(
+            color: Color(0xFF342F45), fontWeight: FontWeight.w500),
         decoration: InputDecoration(
           hintText: hint,
+          hintStyle: const TextStyle(
+              color: Color(0xFF9B98A6), fontWeight: FontWeight.w400),
           isDense: true,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 8, vertical: 16),

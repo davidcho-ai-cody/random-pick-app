@@ -34,6 +34,49 @@ void main() {
     expect(remove.onPressed, isNull);
   });
 
+  testWidgets('header uses one compact trailing team image', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(MaterialApp(
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: const TextScaler.linear(1.3)),
+        child: child!,
+      ),
+      home: const TeamInputScreen(),
+    ));
+
+    final headerImage = find.byWidgetPredicate((widget) =>
+        widget is Image &&
+        widget.image is AssetImage &&
+        (widget.image as AssetImage).assetName.endsWith('team_header.png'));
+    expect(headerImage, findsOneWidget);
+    final image = tester.widget<Image>(headerImage);
+    expect(image.width, 72);
+    expect(image.height, 72);
+    expect(image.fit, BoxFit.contain);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('participant hint and entered name use distinct text styles',
+      (tester) async {
+    await open(tester);
+    final finder = find.byType(TextField).first;
+    final initial = tester.widget<TextField>(finder);
+
+    expect(initial.controller!.text, isEmpty);
+    expect(initial.decoration!.hintText, '참가자 1');
+    expect(initial.decoration!.hintStyle!.color, const Color(0xFF9B98A6));
+    expect(initial.decoration!.hintStyle!.fontWeight, FontWeight.w400);
+    expect(initial.style!.color, const Color(0xFF342F45));
+    expect(initial.style!.fontWeight, FontWeight.w500);
+
+    await tester.enterText(finder, '철수');
+    expect(tester.widget<TextField>(finder).controller!.text, '철수');
+  });
+
   testWidgets('add supports twenty participants and then disables',
       (tester) async {
     await open(tester, height: 4000);

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -43,18 +41,10 @@ void main() {
     expect(find.text('팀 나누기'), findsOneWidget);
   });
 
-  testWidgets('브랜드 시작 화면은 초기화 완료 후 Home으로 전환된다', (tester) async {
-    final initialization = Completer<void>();
+  testWidgets('별도 Flutter 브랜드 Splash 없이 Home을 바로 표시한다', (tester) async {
+    await tester.pumpWidget(const RandomPickApp());
 
-    await tester
-        .pumpWidget(RandomPickApp(initialization: initialization.future));
-
-    expect(find.bySemanticsLabel('랜덤픽 시작 화면'), findsOneWidget);
-    expect(find.text('오늘은 뭘로 정해볼까요?'), findsNothing);
-
-    initialization.complete();
-    await tester.pump();
-
+    expect(find.bySemanticsLabel('랜덤픽 시작 화면'), findsNothing);
     expect(find.text('오늘은 뭘로 정해볼까요?'), findsOneWidget);
   });
 

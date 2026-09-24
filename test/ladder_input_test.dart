@@ -30,6 +30,29 @@ void main() {
     expect(tester.widget<IconButton>(removeButton.first).onPressed, isNull);
   });
 
+  testWidgets('participant and result hints differ from entered values',
+      (tester) async {
+    await open(tester);
+    final fields =
+        tester.widgetList<TextField>(find.byType(TextField)).toList();
+
+    expect(fields[0].controller!.text, isEmpty);
+    expect(fields[0].decoration!.hintText, '참가자 1');
+    expect(fields[1].controller!.text, isEmpty);
+    expect(fields[1].decoration!.hintText, '결과 1');
+    for (final field in fields.take(2)) {
+      expect(field.decoration!.hintStyle!.color, const Color(0xFF9B98A6));
+      expect(field.decoration!.hintStyle!.fontWeight, FontWeight.w400);
+      expect(field.style!.color, const Color(0xFF342F45));
+      expect(field.style!.fontWeight, FontWeight.w500);
+    }
+
+    await tester.enterText(find.byType(TextField).first, '철수');
+    expect(
+        tester.widget<TextField>(find.byType(TextField).first).controller!.text,
+        '철수');
+  });
+
   testWidgets('all participant and result fields are required', (tester) async {
     await open(tester);
     await tester.enterText(find.byType(TextField).at(0), '철수');

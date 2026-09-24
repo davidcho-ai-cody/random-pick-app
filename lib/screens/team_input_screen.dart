@@ -166,7 +166,7 @@ class _TeamInputScreenState extends State<TeamInputScreen> {
               child: ListView(
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                 children: [
                   Row(children: [
                     IconButton(
@@ -182,14 +182,10 @@ class _TeamInputScreenState extends State<TeamInputScreen> {
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF34256C))),
                     ),
+                    Image.asset('assets/images/team/team_header.png',
+                        width: 72, height: 72, fit: BoxFit.contain),
                   ]),
-                  Center(
-                    child: Image.asset('assets/images/team/team_header.png',
-                        height: 150,
-                        width: double.infinity,
-                        fit: BoxFit.contain),
-                  ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
                   const Text('누구와 한 팀이 될까요?',
                       style: TextStyle(
                           fontSize: 25,
@@ -341,8 +337,12 @@ class _ParticipantField extends StatelessWidget {
               controller: controller,
               inputFormatters: [LengthLimitingTextInputFormatter(8)],
               textInputAction: TextInputAction.next,
+              style: const TextStyle(
+                  color: Color(0xFF342F45), fontWeight: FontWeight.w500),
               decoration: InputDecoration(
                 hintText: '참가자 ${index + 1}',
+                hintStyle: const TextStyle(
+                    color: Color(0xFF9B98A6), fontWeight: FontWeight.w400),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 17),
                 border: InputBorder.none,
