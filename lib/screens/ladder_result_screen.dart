@@ -34,7 +34,6 @@ class _LadderResultScreenState extends State<LadderResultScreen>
   int? _selected;
   bool _hasUsedLadder = false;
   bool _leaving = false;
-  bool _adActionInProgress = false;
   bool _celebrating = false;
   Timer? _celebrationTimer;
   late final AnimationController _controller;
@@ -109,27 +108,6 @@ class _LadderResultScreenState extends State<LadderResultScreen>
       handler(safeProceed);
     } else {
       AdService.showThenProceed(safeProceed);
-    }
-  }
-
-  void _reshuffleAfterAd() {
-    if (_adActionInProgress) return;
-    if (!_hasUsedLadder) {
-      _generateBoard();
-      return;
-    }
-    _adActionInProgress = true;
-    void proceed() {
-      if (!mounted) return;
-      _adActionInProgress = false;
-      _generateBoard();
-    }
-
-    final handler = widget.showAdThenProceed;
-    if (handler != null) {
-      handler(proceed);
-    } else {
-      AdService.showThenProceed(proceed);
     }
   }
 
@@ -343,8 +321,7 @@ class _LadderResultScreenState extends State<LadderResultScreen>
                       const SizedBox(width: 10),
                       Expanded(
                           child: FilledButton(
-                        onPressed:
-                            _adActionInProgress ? null : _reshuffleAfterAd,
+                        onPressed: _generateBoard,
                         style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFF6750E5),
                             foregroundColor: Colors.white,

@@ -316,7 +316,8 @@ class _RouletteInputScreenState extends State<RouletteInputScreen> {
                     ],
                   ),
                 ),
-                const InputBannerAd(),
+                if (MediaQuery.viewInsetsOf(context).bottom == 0)
+                  const InputBannerAd(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
                   child: SizedBox(

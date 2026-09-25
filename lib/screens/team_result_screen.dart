@@ -35,7 +35,7 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
   late List<List<String>> _teams;
   late List<int> _revealedCounts;
   bool _revealing = false;
-  bool _adActionInProgress = false;
+  bool _leaving = false;
 
   @override
   void initState() {
@@ -74,12 +74,11 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
     if (mounted) setState(() => _revealing = false);
   }
 
-  void _runAfterAd(VoidCallback action) {
-    if (_adActionInProgress) return;
-    _adActionInProgress = true;
+  void _leave(VoidCallback action) {
+    if (_leaving) return;
+    _leaving = true;
     AdService.showThenProceed(() {
       if (!mounted) return;
-      _adActionInProgress = false;
       action();
     });
   }
@@ -90,7 +89,7 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        _runAfterAd(() => Navigator.of(context).pop());
+        _leave(() => Navigator.of(context).pop());
       },
       child: Scaffold(
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -180,7 +179,7 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
                   child: Row(children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => _runAfterAd(() => Navigator.of(context)
+                        onPressed: () => _leave(() => Navigator.of(context)
                             .popUntil((route) => route.isFirst)),
                         style: OutlinedButton.styleFrom(
                           backgroundColor: Colors.white.withValues(alpha: 0.92),
@@ -196,9 +195,7 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: FilledButton(
-                        onPressed: _revealing || _adActionInProgress
-                            ? null
-                            : () => _runAfterAd(_shuffle),
+                        onPressed: _revealing ? null : _shuffle,
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFF6750E5),
                           foregroundColor: Colors.white,

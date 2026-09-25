@@ -79,7 +79,6 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
   bool _spinning = false;
   bool _celebrating = false;
   bool _leaving = false;
-  bool _adActionInProgress = false;
   Timer? _celebrationTimer;
 
   @override
@@ -157,16 +156,6 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
     _leaving = true;
     AdService.showThenProceed(() {
       if (mounted) proceed();
-    });
-  }
-
-  void _repeatAfterAd() {
-    if (_adActionInProgress || _spinning) return;
-    _adActionInProgress = true;
-    AdService.showThenProceed(() {
-      if (!mounted) return;
-      _adActionInProgress = false;
-      _spin();
     });
   }
 
@@ -392,9 +381,7 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
                         const SizedBox(width: 12),
                         Expanded(
                           child: FilledButton(
-                            onPressed: _spinning || _adActionInProgress
-                                ? null
-                                : _repeatAfterAd,
+                            onPressed: _spinning ? null : _spin,
                             style: FilledButton.styleFrom(
                               backgroundColor: const Color(0xFF6750E5),
                               foregroundColor: Colors.white,

@@ -260,14 +260,7 @@ void main() {
           await tester.tap(find.text('홈으로'));
         }
         await tester.pumpAndSettle();
-        expect(
-            adCalls,
-            switch (use) {
-              'unused' => 0,
-              'selected' => 1,
-              'reshuffled' => 2,
-              _ => throw StateError('unexpected case'),
-            });
+        expect(adCalls, use == 'unused' ? 0 : 1);
         expect(find.text('열기'), findsOneWidget);
       });
     }
