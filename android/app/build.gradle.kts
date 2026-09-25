@@ -27,6 +27,9 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Debug/profile builds use Google's official test App ID.
+        manifestPlaceholders["adMobAppId"] =
+            "ca-app-pub-3940256099942544~3347511713"
     }
 
     buildTypes {
@@ -34,6 +37,8 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            manifestPlaceholders["adMobAppId"] =
+                "ca-app-pub-8734329293403168~6222398579"
         }
     }
 }

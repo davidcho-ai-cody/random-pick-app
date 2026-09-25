@@ -222,7 +222,7 @@ void main() {
 
   for (final exit in ['back', 'home']) {
     for (final use in ['unused', 'selected', 'reshuffled']) {
-      testWidgets('$exit exit after $use calls ads only after selection',
+      testWidgets('$exit exit after $use follows result-action ad policy',
           (tester) async {
         var adCalls = 0;
         await tester.pumpWidget(MaterialApp(
@@ -260,7 +260,14 @@ void main() {
           await tester.tap(find.text('홈으로'));
         }
         await tester.pumpAndSettle();
-        expect(adCalls, use == 'unused' ? 0 : 1);
+        expect(
+            adCalls,
+            switch (use) {
+              'unused' => 0,
+              'selected' => 1,
+              'reshuffled' => 2,
+              _ => throw StateError('unexpected case'),
+            });
         expect(find.text('열기'), findsOneWidget);
       });
     }

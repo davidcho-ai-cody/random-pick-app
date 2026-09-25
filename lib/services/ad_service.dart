@@ -34,11 +34,34 @@ class InterstitialCooldown {
 class AdService {
   AdService._();
 
-  static const _androidAdUnitId = 'ca-app-pub-3940256099942544/1033173712';
-  static const _iosAdUnitId = 'ca-app-pub-3940256099942544/4411468910';
+  static const _androidTestInterstitialId =
+      'ca-app-pub-3940256099942544/1033173712';
+  static const _androidProductionInterstitialId =
+      'ca-app-pub-8734329293403168/2938598836';
+  static const _androidTestBannerId = 'ca-app-pub-3940256099942544/6300978111';
+  static const _androidProductionBannerId =
+      'ca-app-pub-8734329293403168/1146165865';
+  static const _iosTestInterstitialId =
+      'ca-app-pub-3940256099942544/4411468910';
+  static const _iosTestBannerId = 'ca-app-pub-3940256099942544/2934735716';
 
-  static String get _adUnitId =>
-      Platform.isAndroid ? _androidAdUnitId : _iosAdUnitId;
+  /// SDK 초기화 전에는 광고 객체를 만들지 않는다. 테스트에서는 초기화가
+  /// 일어나지 않으므로 플랫폼 채널 요청도 발생하지 않는다.
+  static final ValueNotifier<bool> initialized = ValueNotifier(false);
+
+  static String get interstitialAdUnitId {
+    if (!Platform.isAndroid) return _iosTestInterstitialId;
+    return kReleaseMode
+        ? _androidProductionInterstitialId
+        : _androidTestInterstitialId;
+  }
+
+  static String get bannerAdUnitId {
+    if (!Platform.isAndroid) return _iosTestBannerId;
+    return kReleaseMode ? _androidProductionBannerId : _androidTestBannerId;
+  }
+
+  static void markInitialized() => initialized.value = true;
 
   static InterstitialAd? _ad;
 
@@ -48,7 +71,7 @@ class AdService {
     if (kIsWeb) return;
 
     InterstitialAd.load(
-      adUnitId: _adUnitId,
+      adUnitId: interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) => _ad = ad,

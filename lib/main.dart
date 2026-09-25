@@ -18,6 +18,7 @@ Future<void> _initializeServices() async {
   try {
     if (!kIsWeb) {
       await MobileAds.instance.initialize();
+      AdService.markInitialized();
       AdService.loadAd();
     }
   } catch (_) {

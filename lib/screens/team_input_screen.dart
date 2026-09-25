@@ -8,6 +8,7 @@ import '../models/game_mode.dart';
 import '../models/recent_use.dart';
 import '../models/team_presets.dart';
 import '../services/recent_use_service.dart';
+import '../widgets/input_banner_ad.dart';
 import 'team_result_screen.dart';
 
 class TeamInputScreen extends StatefulWidget {
@@ -246,6 +247,7 @@ class _TeamInputScreenState extends State<TeamInputScreen> {
                 ],
               ),
             ),
+            const InputBannerAd(),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
               child: SizedBox(

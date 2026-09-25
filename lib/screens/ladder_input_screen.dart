@@ -7,6 +7,7 @@ import '../models/game_mode.dart';
 import '../models/ladder_presets.dart';
 import '../models/recent_use.dart';
 import '../services/recent_use_service.dart';
+import '../widgets/input_banner_ad.dart';
 import 'ladder_result_screen.dart';
 
 /// 참가자와 결과를 1:1로 입력받는다.
@@ -352,6 +353,7 @@ class _LadderInputScreenState extends State<LadderInputScreen> {
                     ],
                   ),
                 ),
+                const InputBannerAd(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
                   child: SizedBox(

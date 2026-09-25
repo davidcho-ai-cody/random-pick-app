@@ -47,4 +47,11 @@ void main() {
       expect(preferences.getString(InterstitialCooldown.storageKey), isNull);
     });
   });
+
+  test('debug builds use only Google official test ad unit IDs', () {
+    expect(AdService.interstitialAdUnitId,
+        startsWith('ca-app-pub-3940256099942544/'));
+    expect(
+        AdService.bannerAdUnitId, startsWith('ca-app-pub-3940256099942544/'));
+  });
 }

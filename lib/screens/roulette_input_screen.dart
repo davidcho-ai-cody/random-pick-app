@@ -7,6 +7,7 @@ import '../models/game_mode.dart';
 import '../models/roulette_presets.dart';
 import '../models/recent_use.dart';
 import '../services/recent_use_service.dart';
+import '../widgets/input_banner_ad.dart';
 import 'roulette_result_screen.dart';
 
 class RouletteInputScreen extends StatefulWidget {
@@ -315,6 +316,7 @@ class _RouletteInputScreenState extends State<RouletteInputScreen> {
                     ],
                   ),
                 ),
+                const InputBannerAd(),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
                   child: SizedBox(
