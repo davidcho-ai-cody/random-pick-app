@@ -20,6 +20,10 @@ void main() {
     await tester.pump();
     expect(find.byType(RouletteWheel), findsOneWidget);
     expect(find.text('✨ 두근두근...'), findsOneWidget);
+    final initialWheelCenter =
+        tester.getCenter(find.byKey(const ValueKey('roulette-wheel-stage')));
+    final initialWheelSize =
+        tester.getSize(find.byKey(const ValueKey('roulette-wheel-stage')));
     expect(
         tester
             .widget<FilledButton>(find.widgetWithText(FilledButton, '다시 돌리기'))
@@ -27,6 +31,10 @@ void main() {
         isNull);
 
     await tester.pumpAndSettle();
+    expect(tester.getCenter(find.byKey(const ValueKey('roulette-wheel-stage'))),
+        initialWheelCenter);
+    expect(tester.getSize(find.byKey(const ValueKey('roulette-wheel-stage'))),
+        initialWheelSize);
     expect(find.text('오늘의 선택은'), findsOneWidget);
     expect(
         tester
@@ -61,6 +69,23 @@ void main() {
     await tester.pump();
     await tester.pumpWidget(const MaterialApp(home: Scaffold()));
     await tester.pump(const Duration(seconds: 5));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('compact result remains overflow-free on a small portrait screen',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    await tester.pumpWidget(const MaterialApp(
+      home: RouletteResultScreen(items: ['아주긴결과이름입니다', 'B']),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byType(RouletteWheel), findsOneWidget);
+    expect(find.text('오늘의 선택은'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

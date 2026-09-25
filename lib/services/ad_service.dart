@@ -2,6 +2,29 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// 전면광고가 실제 노출된 시각을 영속화해 앱 재시작 후에도 쿨다운을 지킨다.
+class InterstitialCooldown {
+  InterstitialCooldown(this.preferences, {DateTime Function()? now})
+      : _now = now ?? DateTime.now;
+
+  static const duration = Duration(seconds: 90);
+  static const storageKey = 'last_interstitial_shown_at';
+
+  final SharedPreferences preferences;
+  final DateTime Function() _now;
+
+  bool get canShow {
+    final stored = preferences.getString(storageKey);
+    final lastShown = stored == null ? null : DateTime.tryParse(stored);
+    if (lastShown == null) return true;
+    return !_now().toUtc().isBefore(lastShown.toUtc().add(duration));
+  }
+
+  Future<bool> markShown() =>
+      preferences.setString(storageKey, _now().toUtc().toIso8601String());
+}
 
 /// 결과 화면에서 홈으로 돌아갈 때 보여주는 전면광고를 관리한다.
 ///
@@ -37,26 +60,52 @@ class AdService {
   /// 로드된 광고가 있으면 보여준 뒤 [proceed]를 실행하고, 없으면 사용자를
   /// 기다리게 하지 않고 바로 [proceed]를 실행한다. 화면 전환이 광고 로드
   /// 성공 여부에 발목 잡히지 않도록 하기 위함이다.
-  static void showThenProceed(VoidCallback proceed) {
+  static Future<void> showThenProceed(VoidCallback proceed) async {
     final ad = _ad;
     if (kIsWeb || ad == null) {
       proceed();
       return;
     }
 
+    late final InterstitialCooldown cooldown;
+    try {
+      cooldown = InterstitialCooldown(await SharedPreferences.getInstance());
+    } catch (_) {
+      proceed();
+      return;
+    }
+    if (!cooldown.canShow) {
+      proceed();
+      return;
+    }
+
     _ad = null;
+    var proceeded = false;
+    void proceedOnce() {
+      if (proceeded) return;
+      proceeded = true;
+      proceed();
+    }
+
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
         loadAd();
-        proceed();
+        proceedOnce();
       },
       onAdFailedToShowFullScreenContent: (ad, _) {
         ad.dispose();
         loadAd();
-        proceed();
+        proceedOnce();
       },
     );
-    ad.show();
+    try {
+      await ad.show();
+      await cooldown.markShown();
+    } catch (_) {
+      ad.dispose();
+      loadAd();
+      proceedOnce();
+    }
   }
 }

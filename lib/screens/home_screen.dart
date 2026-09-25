@@ -110,19 +110,38 @@ class _HomeScreenState extends State<HomeScreen> {
                             label: '앱 종료',
                             button: true,
                             excludeSemantics: true,
-                            child: TextButton.icon(
-                              onPressed: _requestExit,
-                              style: TextButton.styleFrom(
-                                foregroundColor: const Color(0xFF615981),
-                                minimumSize: const Size(72, 48),
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 8),
+                            child: Container(
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.76),
+                                borderRadius: BorderRadius.circular(22),
+                                border: Border.all(
+                                    color: const Color(0xFFD9D0F1)
+                                        .withValues(alpha: 0.72)),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x146750E5),
+                                    blurRadius: 10,
+                                    offset: Offset(0, 3),
+                                  ),
+                                ],
                               ),
-                              icon: const Icon(Icons.power_settings_new_rounded,
-                                  size: 20),
-                              label: const Text('종료',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.w700)),
+                              child: TextButton.icon(
+                                onPressed: _requestExit,
+                                style: TextButton.styleFrom(
+                                  foregroundColor: const Color(0xFF615981),
+                                  minimumSize: const Size(0, 44),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 15),
+                                  shape: const StadiumBorder(),
+                                ),
+                                icon: const Icon(
+                                    Icons.power_settings_new_rounded,
+                                    size: 19),
+                                label: const Text('종료',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w700)),
+                              ),
                             ),
                           ),
                         ),

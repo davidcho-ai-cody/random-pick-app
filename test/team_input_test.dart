@@ -262,8 +262,8 @@ void main() {
     expect(find.text('?'), findsNWidgets(3));
     expect(tester.getSize(find.byKey(const ValueKey('team-card-0'))),
         initialCardSize);
-    expect(tester.getSize(find.byKey(const ValueKey('1팀_member_0'))),
-        initialChipSize);
+    expect(tester.getSize(find.byKey(const ValueKey('1팀_member_0'))).width,
+        isNot(initialChipSize.width));
     for (var i = 0; i < 3; i++) {
       await tester.pump(const Duration(milliseconds: 560));
     }
@@ -318,6 +318,27 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('팀 나누기 완료! 🎉'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('hidden pills do not expose short and long member name widths',
+      (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: TeamResultScreen(
+        participants: ['두글', '여덟글자이름임', '세글자', '또다른이름'],
+        teamCount: 2,
+      ),
+    ));
+
+    final first = tester.getSize(find.byKey(const ValueKey('1팀_member_0')));
+    final second = tester.getSize(find.byKey(const ValueKey('1팀_member_1')));
+    expect(first.width, 48);
+    expect(second.width, 48);
+    expect(first.height, second.height);
+    expect(tester.takeException(), isNull);
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 560));
+    }
+    await tester.pump(const Duration(milliseconds: 250));
   });
 
   testWidgets('eight teams reveal and scroll without overflow', (tester) async {

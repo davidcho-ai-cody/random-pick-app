@@ -220,23 +220,15 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
                                 constraints.maxHeight * 0.55),
                             320.0,
                           );
-                          // 결과 카드와 마스코트가 추가될 때만 남은 높이에 맞춘다.
-                          final wheelSize = _winnerIndex == null
-                              ? baseWheelSize
-                              : min(baseWheelSize,
-                                  max(180.0, constraints.maxHeight - 270));
-                          final mascotHeight = min(
-                              76.0, max(60.0, constraints.maxHeight * 0.12));
+                          // 결과 전후에 같은 크기와 위치를 사용해 휠이 튀지 않게 한다.
+                          final wheelSize = baseWheelSize;
                           return SingleChildScrollView(
                             child: ConstrainedBox(
                               constraints: BoxConstraints(
                                   minHeight: constraints.maxHeight),
                               child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
                                 children: [
-                                  SizedBox(
-                                      height: _winnerIndex == null ? 12 : 8),
+                                  const SizedBox(height: 12),
                                   Text(
                                     '두근두근 어떤 결과가 나왔을까요?',
                                     textAlign: TextAlign.center,
@@ -248,9 +240,9 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
                                           fontWeight: FontWeight.w600,
                                         ),
                                   ),
-                                  SizedBox(
-                                      height: _winnerIndex == null ? 22 : 12),
+                                  const SizedBox(height: 22),
                                   Stack(
+                                    key: const ValueKey('roulette-wheel-stage'),
                                     clipBehavior: Clip.none,
                                     alignment: Alignment.center,
                                     children: [
@@ -290,71 +282,75 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
                                           top: -14, child: _WheelPointer()),
                                     ],
                                   ),
+                                  const SizedBox(height: 18),
                                   SizedBox(
-                                      height: _winnerIndex == null ? 26 : 14),
-                                  if (_winnerIndex == null)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 20, vertical: 12),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            Colors.white.withValues(alpha: 0.9),
-                                        borderRadius: BorderRadius.circular(24),
-                                        border: Border.all(
-                                            color: const Color(0xFFE2D7FA)),
-                                      ),
-                                      child: const Text('✨ 두근두근...',
-                                          style: TextStyle(
-                                              color: Color(0xFF5C43B5),
-                                              fontWeight: FontWeight.w700)),
-                                    )
-                                  else
-                                    Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        TweenAnimationBuilder<double>(
-                                          key: ValueKey(_winnerIndex),
-                                          tween: Tween(begin: 0, end: 1),
-                                          duration:
-                                              const Duration(milliseconds: 350),
-                                          curve: Curves.easeOutBack,
-                                          builder: (context, value, child) =>
-                                              Opacity(
-                                            opacity: value.clamp(0.0, 1.0),
-                                            child: Transform.scale(
-                                                scale: 0.92 + 0.08 * value,
-                                                child: child),
-                                          ),
-                                          child: _ResultCard(
-                                              winner: items[_winnerIndex!]),
-                                        ),
-                                        Positioned.fill(
-                                          child: IgnorePointer(
-                                            child: AnimatedOpacity(
-                                              opacity: _celebrating ? 0.4 : 0,
-                                              duration: const Duration(
-                                                  milliseconds: 300),
-                                              child: Image.asset(
-                                                'assets/images/roulette/result_celebration.png',
-                                                fit: BoxFit.contain,
+                                    height: 118,
+                                    child: Center(
+                                      child: _winnerIndex == null
+                                          ? Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 20,
+                                                      vertical: 12),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white
+                                                    .withValues(alpha: 0.9),
+                                                borderRadius:
+                                                    BorderRadius.circular(24),
+                                                border: Border.all(
+                                                    color: const Color(
+                                                        0xFFE2D7FA)),
                                               ),
+                                              child: const Text('✨ 두근두근...',
+                                                  style: TextStyle(
+                                                      color: Color(0xFF5C43B5),
+                                                      fontWeight:
+                                                          FontWeight.w700)),
+                                            )
+                                          : Stack(
+                                              alignment: Alignment.center,
+                                              children: [
+                                                TweenAnimationBuilder<double>(
+                                                  key: ValueKey(_winnerIndex),
+                                                  tween:
+                                                      Tween(begin: 0, end: 1),
+                                                  duration: const Duration(
+                                                      milliseconds: 350),
+                                                  curve: Curves.easeOutBack,
+                                                  builder:
+                                                      (context, value, child) =>
+                                                          Opacity(
+                                                    opacity:
+                                                        value.clamp(0.0, 1.0),
+                                                    child: Transform.scale(
+                                                        scale:
+                                                            0.92 + 0.08 * value,
+                                                        child: child),
+                                                  ),
+                                                  child: _ResultCard(
+                                                      winner:
+                                                          items[_winnerIndex!]),
+                                                ),
+                                                Positioned.fill(
+                                                  child: IgnorePointer(
+                                                    child: AnimatedOpacity(
+                                                      opacity: _celebrating
+                                                          ? 0.4
+                                                          : 0,
+                                                      duration: const Duration(
+                                                          milliseconds: 300),
+                                                      child: Image.asset(
+                                                        'assets/images/roulette/result_celebration.png',
+                                                        fit: BoxFit.contain,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                        ),
-                                      ],
                                     ),
-                                  SizedBox(
-                                      height: _winnerIndex == null ? 12 : 8),
-                                  if (_winnerIndex != null)
-                                    Image.asset(
-                                      'assets/images/roulette/result_mascot.png',
-                                      width:
-                                          min(constraints.maxWidth * 0.38, 128),
-                                      height: mascotHeight,
-                                      fit: BoxFit.contain,
-                                    ),
-                                  SizedBox(
-                                      height: _winnerIndex == null ? 12 : 16),
+                                  ),
+                                  const SizedBox(height: 12),
                                 ],
                               ),
                             ),
@@ -435,7 +431,7 @@ class _ResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.fromLTRB(18, 12, 10, 12),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(24),
@@ -445,21 +441,38 @@ class _ResultCard extends StatelessWidget {
                 color: Color(0x246750E5), blurRadius: 18, offset: Offset(0, 8))
           ],
         ),
-        child: Column(
+        child: Row(
           children: [
-            const Text('오늘의 선택은',
-                style: TextStyle(
-                    color: Color(0xFF615981), fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            Text('🎉 $winner',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: const Color(0xFF34256C),
-                    fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            const Text('좋은 하루가 시작될 거예요! 💜',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF615981))),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('오늘의 선택은',
+                      style: TextStyle(
+                          color: Color(0xFF615981),
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text('🎉 $winner',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: const Color(0xFF34256C),
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  const Text('좋은 하루가 시작될 거예요! 💜',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xFF615981), fontSize: 12)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            Image.asset(
+              'assets/images/roulette/result_mascot.png',
+              width: 76,
+              height: 76,
+              fit: BoxFit.contain,
+            ),
           ],
         ),
       );
