@@ -77,6 +77,10 @@ class _TeamResultScreenState extends State<TeamResultScreen> {
   void _leave(VoidCallback action) {
     if (_leaving) return;
     _leaving = true;
+    if (_revealing) {
+      action();
+      return;
+    }
     AdService.showThenProceed(() {
       if (!mounted) return;
       action();

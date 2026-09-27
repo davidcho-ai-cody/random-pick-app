@@ -95,7 +95,7 @@ class _LadderResultScreenState extends State<LadderResultScreen>
   void _leave(VoidCallback proceed) {
     if (_leaving) return;
     _leaving = true;
-    if (!_hasUsedLadder) {
+    if (!_hasUsedLadder || _controller.status != AnimationStatus.completed) {
       proceed();
       return;
     }

@@ -154,6 +154,10 @@ class _RouletteResultScreenState extends State<RouletteResultScreen>
   void _leave(VoidCallback proceed) {
     if (_leaving) return;
     _leaving = true;
+    if (_winnerIndex == null || _spinning) {
+      proceed();
+      return;
+    }
     AdService.showThenProceed(() {
       if (mounted) proceed();
     });

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -22,6 +23,14 @@ class InterstitialCooldown {
     return !_now().toUtc().isBefore(lastShown.toUtc().add(duration));
   }
 
+  Duration get remaining {
+    final stored = preferences.getString(storageKey);
+    final lastShown = stored == null ? null : DateTime.tryParse(stored);
+    if (lastShown == null) return Duration.zero;
+    final remaining = lastShown.toUtc().add(duration).difference(_now().toUtc());
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
   Future<bool> markShown() =>
       preferences.setString(storageKey, _now().toUtc().toIso8601String());
 }
@@ -37,7 +46,7 @@ class AdService {
   static const _androidTestInterstitialId =
       'ca-app-pub-3940256099942544/1033173712';
   static const _androidProductionInterstitialId =
-      'ca-app-pub-8734329293403168/2938598836';
+      'ca-app-pub-8734329293403168/2938593836';
   static const _androidTestBannerId = 'ca-app-pub-3940256099942544/6300978111';
   static const _androidProductionBannerId =
       'ca-app-pub-8734329293403168/1146165865';
@@ -64,28 +73,78 @@ class AdService {
   static void markInitialized() => initialized.value = true;
 
   static InterstitialAd? _ad;
+  static bool _isLoading = false;
+  static Timer? _retryTimer;
+  static int _consecutiveLoadFailures = 0;
+  static const _retryDelays = <Duration>[
+    Duration(seconds: 10),
+    Duration(seconds: 20),
+    Duration(seconds: 40),
+    Duration(seconds: 60),
+  ];
 
   /// 다음에 보여줄 전면광고를 미리 로드해둔다. 웹은 플러그인이 지원하지
   /// 않으므로 아무 것도 하지 않는다.
   static void loadAd() {
-    if (kIsWeb) return;
+    if (kIsWeb || !initialized.value || _ad != null || _isLoading) return;
+
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _isLoading = true;
+    debugPrint('[Interstitial] load requested');
 
     InterstitialAd.load(
       adUnitId: interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
-        onAdLoaded: (ad) => _ad = ad,
-        onAdFailedToLoad: (_) => _ad = null,
+        onAdLoaded: (ad) {
+          _isLoading = false;
+          _consecutiveLoadFailures = 0;
+          _ad = ad;
+          debugPrint('[Interstitial] loaded');
+        },
+        onAdFailedToLoad: (error) {
+          _isLoading = false;
+          _ad = null;
+          debugPrint('[Interstitial] failed to load: $error');
+          _scheduleRetry();
+        },
       ),
     );
+  }
+
+  static void _scheduleRetry() {
+    if (kIsWeb || !initialized.value || _retryTimer != null) return;
+    if (_consecutiveLoadFailures >= _retryDelays.length) {
+      debugPrint(
+          '[Interstitial] retry paused until the next result exit');
+      return;
+    }
+    final delay = _retryDelays[_consecutiveLoadFailures];
+    _consecutiveLoadFailures++;
+    debugPrint('[Interstitial] retry scheduled: ${delay.inSeconds} sec');
+    _retryTimer = Timer(delay, () {
+      _retryTimer = null;
+      loadAd();
+    });
+  }
+
+  static void _ensurePreloaded() {
+    if (_ad == null && !_isLoading && _retryTimer == null) {
+      _consecutiveLoadFailures = 0;
+      loadAd();
+    }
   }
 
   /// 로드된 광고가 있으면 보여준 뒤 [proceed]를 실행하고, 없으면 사용자를
   /// 기다리게 하지 않고 바로 [proceed]를 실행한다. 화면 전환이 광고 로드
   /// 성공 여부에 발목 잡히지 않도록 하기 위함이다.
   static Future<void> showThenProceed(VoidCallback proceed) async {
+    debugPrint(
+        '[Interstitial] result exit requested; ad ready: ${_ad != null}, loading: $_isLoading');
     final ad = _ad;
     if (kIsWeb || ad == null) {
+      _ensurePreloaded();
       proceed();
       return;
     }
@@ -94,10 +153,13 @@ class AdService {
     try {
       cooldown = InterstitialCooldown(await SharedPreferences.getInstance());
     } catch (_) {
+      debugPrint('[Interstitial] cooldown unavailable');
       proceed();
       return;
     }
     if (!cooldown.canShow) {
+      debugPrint(
+          '[Interstitial] cooldown remaining: ${cooldown.remaining.inSeconds} sec');
       proceed();
       return;
     }
@@ -111,21 +173,28 @@ class AdService {
     }
 
     ad.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (_) {
+        debugPrint('[Interstitial] showed');
+        unawaited(cooldown.markShown());
+      },
       onAdDismissedFullScreenContent: (ad) {
+        debugPrint('[Interstitial] dismissed');
         ad.dispose();
         loadAd();
         proceedOnce();
       },
-      onAdFailedToShowFullScreenContent: (ad, _) {
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        debugPrint('[Interstitial] failed to show: $error');
         ad.dispose();
         loadAd();
         proceedOnce();
       },
     );
     try {
+      debugPrint('[Interstitial] show requested');
       await ad.show();
-      await cooldown.markShown();
-    } catch (_) {
+    } catch (error) {
+      debugPrint('[Interstitial] show threw: $error');
       ad.dispose();
       loadAd();
       proceedOnce();
