@@ -1,7 +1,7 @@
 name: random_pick
 description: "랜덤픽 - 룰렛, 사다리타기, 팀나누기를 한 번에. PLAY YOUR NEXT WORLD."
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
