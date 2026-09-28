@@ -43,6 +43,12 @@ class InterstitialCooldown {
 class AdService {
   AdService._();
 
+  static void _debugLog(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
+    }
+  }
+
   static const _androidTestInterstitialId =
       'ca-app-pub-3940256099942544/1033173712';
   static const _androidProductionInterstitialId =
@@ -91,7 +97,7 @@ class AdService {
     _retryTimer?.cancel();
     _retryTimer = null;
     _isLoading = true;
-    debugPrint('[Interstitial] load requested');
+    _debugLog('[Interstitial] load requested');
 
     InterstitialAd.load(
       adUnitId: interstitialAdUnitId,
@@ -101,12 +107,12 @@ class AdService {
           _isLoading = false;
           _consecutiveLoadFailures = 0;
           _ad = ad;
-          debugPrint('[Interstitial] loaded');
+          _debugLog('[Interstitial] loaded');
         },
         onAdFailedToLoad: (error) {
           _isLoading = false;
           _ad = null;
-          debugPrint('[Interstitial] failed to load: $error');
+          _debugLog('[Interstitial] failed to load: $error');
           _scheduleRetry();
         },
       ),
@@ -116,13 +122,13 @@ class AdService {
   static void _scheduleRetry() {
     if (kIsWeb || !initialized.value || _retryTimer != null) return;
     if (_consecutiveLoadFailures >= _retryDelays.length) {
-      debugPrint(
+      _debugLog(
           '[Interstitial] retry paused until the next result exit');
       return;
     }
     final delay = _retryDelays[_consecutiveLoadFailures];
     _consecutiveLoadFailures++;
-    debugPrint('[Interstitial] retry scheduled: ${delay.inSeconds} sec');
+    _debugLog('[Interstitial] retry scheduled: ${delay.inSeconds} sec');
     _retryTimer = Timer(delay, () {
       _retryTimer = null;
       loadAd();
@@ -140,7 +146,7 @@ class AdService {
   /// 기다리게 하지 않고 바로 [proceed]를 실행한다. 화면 전환이 광고 로드
   /// 성공 여부에 발목 잡히지 않도록 하기 위함이다.
   static Future<void> showThenProceed(VoidCallback proceed) async {
-    debugPrint(
+    _debugLog(
         '[Interstitial] result exit requested; ad ready: ${_ad != null}, loading: $_isLoading');
     final ad = _ad;
     if (kIsWeb || ad == null) {
@@ -153,12 +159,12 @@ class AdService {
     try {
       cooldown = InterstitialCooldown(await SharedPreferences.getInstance());
     } catch (_) {
-      debugPrint('[Interstitial] cooldown unavailable');
+      _debugLog('[Interstitial] cooldown unavailable');
       proceed();
       return;
     }
     if (!cooldown.canShow) {
-      debugPrint(
+      _debugLog(
           '[Interstitial] cooldown remaining: ${cooldown.remaining.inSeconds} sec');
       proceed();
       return;
@@ -174,27 +180,27 @@ class AdService {
 
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (_) {
-        debugPrint('[Interstitial] showed');
+        _debugLog('[Interstitial] showed');
         unawaited(cooldown.markShown());
       },
       onAdDismissedFullScreenContent: (ad) {
-        debugPrint('[Interstitial] dismissed');
+        _debugLog('[Interstitial] dismissed');
         ad.dispose();
         loadAd();
         proceedOnce();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
-        debugPrint('[Interstitial] failed to show: $error');
+        _debugLog('[Interstitial] failed to show: $error');
         ad.dispose();
         loadAd();
         proceedOnce();
       },
     );
     try {
-      debugPrint('[Interstitial] show requested');
+      _debugLog('[Interstitial] show requested');
       await ad.show();
     } catch (error) {
-      debugPrint('[Interstitial] show threw: $error');
+      _debugLog('[Interstitial] show threw: $error');
       ad.dispose();
       loadAd();
       proceedOnce();
