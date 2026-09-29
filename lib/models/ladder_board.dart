@@ -8,25 +8,110 @@ class LadderBoard {
         assert(rows >= 1),
         rungs = List.generate(rows, (_) => List.filled(columns - 1, false)) {
     final rnd = random ?? Random();
-    for (var row = 0; row < rows; row++) {
-      // 행마다 검사 방향을 공정하게 선택해 인접 다리 충돌을 피하면서도
-      // 한쪽 열이 항상 먼저 선택되는 편향을 없앤다.
-      final fromLeft = rnd.nextBool();
-      var col = fromLeft ? 0 : columns - 2;
-      while (col >= 0 && col < columns - 1) {
-        if (rnd.nextDouble() < 0.6) {
-          rungs[row][col] = true;
-          col += fromLeft ? 2 : -2; // 인접 다리가 겹치지 않도록 건너뛴다.
-        } else {
-          col += fromLeft ? 1 : -1;
-        }
-      }
-    }
+    final pairCounts = _createPairCounts(rnd);
+    _placeRungs(pairCounts, rnd);
   }
 
   final int columns;
   final int rows;
   final List<List<bool>> rungs;
+
+  List<int> _createPairCounts(Random random) {
+    final pairCount = columns - 1;
+    final slots = rows * pairCount;
+    final maxRungs = (columns ~/ 2) * rows;
+    final minTotal = max(pairCount, (slots * 0.36).round());
+    final maxTotal = min(maxRungs, (slots * 0.44).round());
+    final total = minTotal + random.nextInt(maxTotal - minTotal + 1);
+
+    // 전체 밀도는 매번 달라지게 두되, pair별 목표는 평균에서 1개 안팎으로
+    // 흔들어 특정 pair만 고립되거나 과밀해지는 극단적인 모양을 막는다.
+    final base = total ~/ pairCount;
+    final counts = List.filled(pairCount, base);
+    final pairOrder = List.generate(pairCount, (index) => index)
+      ..shuffle(random);
+    for (final pair in pairOrder.take(total % pairCount)) {
+      counts[pair]++;
+    }
+
+    final minPerPair = max(1, base - 1);
+    final maxPerPair = base + 1;
+    final transfers = random.nextInt(max(1, pairCount ~/ 2) + 1);
+    for (var i = 0; i < transfers; i++) {
+      final donors = [
+        for (var pair = 0; pair < pairCount; pair++)
+          if (counts[pair] > minPerPair) pair,
+      ];
+      final receivers = [
+        for (var pair = 0; pair < pairCount; pair++)
+          if (counts[pair] < maxPerPair) pair,
+      ];
+      if (donors.isEmpty || receivers.isEmpty) break;
+      final donor = donors[random.nextInt(donors.length)];
+      final validReceivers = receivers.where((pair) => pair != donor).toList();
+      if (validReceivers.isEmpty) break;
+      final receiver =
+          validReceivers[random.nextInt(validReceivers.length)];
+      counts[donor]--;
+      counts[receiver]++;
+    }
+    return counts;
+  }
+
+  void _placeRungs(List<int> pairCounts, Random random) {
+    // 인접 pair가 같은 row를 쓰지 않게 왼쪽 pair부터 사용 row를 정한다.
+    // 비인접 pair는 같은 row를 공유할 수 있으므로 기존 사다리 규칙과
+    // 자연스러운 가로선 밀도를 모두 유지한다.
+    for (var attempt = 0; attempt < 200; attempt++) {
+      for (final row in rungs) {
+        row.fillRange(0, row.length, false);
+      }
+
+      var previousRows = <int>{};
+      var completed = true;
+      for (var pair = 0; pair < pairCounts.length; pair++) {
+        final availableRows = [
+          for (var row = 0; row < rows; row++)
+            if (!previousRows.contains(row)) row,
+        ]..shuffle(random);
+        final selectedRows = <int>[];
+
+        // 3개 이상인 pair는 상·중·하 구간을 모두 사용한다.
+        if (pairCounts[pair] >= 3) {
+          for (var zone = 0; zone < 3; zone++) {
+            final candidates = availableRows
+                .where((row) => row * 3 ~/ rows == zone)
+                .where((row) => !selectedRows.contains(row))
+                .toList();
+            if (candidates.isEmpty) {
+              completed = false;
+              break;
+            }
+            selectedRows.add(candidates[random.nextInt(candidates.length)]);
+          }
+        }
+        if (!completed) break;
+
+        final remainingRows = availableRows
+            .where((row) => !selectedRows.contains(row))
+            .toList()
+          ..shuffle(random);
+        final needed = pairCounts[pair] - selectedRows.length;
+        if (remainingRows.length < needed) {
+          completed = false;
+          break;
+        }
+        selectedRows.addAll(remainingRows.take(needed));
+        for (final row in selectedRows) {
+          rungs[row][pair] = true;
+        }
+        previousRows = selectedRows.toSet();
+      }
+      if (completed) return;
+    }
+
+    throw StateError('Unable to generate a valid ladder board.');
+  }
 
   /// [startColumn]에서 출발했을 때 각 행 경계에서 거쳐가는 열 위치 목록.
   List<int> pathFrom(int startColumn) {

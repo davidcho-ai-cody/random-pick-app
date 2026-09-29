@@ -79,4 +79,100 @@ void main() {
       }
     }
   });
+
+  test('pair counts stay varied without isolated or overcrowded pairs', () {
+    for (final columns in [4, 5, 6, 8, 10]) {
+      final rows = (columns * 4).clamp(12, 20);
+      var sawVariation = false;
+      for (var seed = 0; seed < 10000; seed++) {
+        final board =
+            LadderBoard(columns: columns, rows: rows, random: Random(seed));
+        final counts = [
+          for (var pair = 0; pair < columns - 1; pair++)
+            board.rungs.where((row) => row[pair]).length,
+        ];
+        final lowest = counts.reduce(min);
+        final highest = counts.reduce(max);
+        expect(lowest, greaterThan(0), reason: '$columns columns, seed $seed');
+        expect(highest - lowest, lessThanOrEqualTo(2),
+            reason: '$columns columns, seed $seed: $counts');
+        if (highest != lowest) sawVariation = true;
+
+        for (var pair = 0; pair < counts.length; pair++) {
+          if (counts[pair] < 3) continue;
+          final zones = <int>{};
+          for (var row = 0; row < rows; row++) {
+            if (board.rungs[row][pair]) zones.add(row * 3 ~/ rows);
+          }
+          expect(zones, {0, 1, 2},
+              reason: '$columns columns, seed $seed, pair $pair');
+        }
+      }
+      expect(sawVariation, isTrue, reason: '$columns columns');
+    }
+  });
+
+  test('10000 seeded boards preserve valid paths and symmetric mappings', () {
+    for (final columns in [4, 5, 6, 8]) {
+      final rows = (columns * 4).clamp(12, 20);
+      final mappingCounts =
+          List.generate(columns, (_) => List.filled(columns, 0));
+      for (var seed = 0; seed < 10000; seed++) {
+        final board =
+            LadderBoard(columns: columns, rows: rows, random: Random(seed));
+        final destinations = <int>[];
+        for (var start = 0; start < columns; start++) {
+          final path = board.pathFrom(start);
+          expect(path.length, rows + 1);
+          expect(path.every((column) => column >= 0 && column < columns),
+              isTrue);
+          destinations.add(path.last);
+          mappingCounts[start][path.last]++;
+        }
+        expect(destinations.toSet().length, columns,
+            reason: '$columns columns, seed $seed');
+      }
+
+      for (var start = 0; start < columns; start++) {
+        for (var destination = 0; destination < columns; destination++) {
+          final count = mappingCounts[start][destination];
+          final mirrored = mappingCounts[columns - 1 - start]
+              [columns - 1 - destination];
+          final average = (count + mirrored) / 2;
+          expect(count, greaterThan(0));
+          expect((count - mirrored).abs() / average, lessThan(0.20),
+              reason:
+                  '$columns columns, $start->$destination: $count/$mirrored');
+        }
+      }
+    }
+  });
+
+  test('2/3/7/9명은 대량 seed에서도 고립 없이 유효한 사다리를 생성한다', () {
+    for (final columns in [2, 3, 7, 9]) {
+      final rows = (columns * 4).clamp(12, 20);
+      for (var seed = 0; seed < 3000; seed++) {
+        final board =
+            LadderBoard(columns: columns, rows: rows, random: Random(seed));
+
+        final destinations = <int>[];
+        for (var start = 0; start < columns; start++) {
+          final path = board.pathFrom(start);
+          expect(path.length, rows + 1);
+          expect(
+              path.every((column) => column >= 0 && column < columns), isTrue);
+          destinations.add(path.last);
+        }
+        expect(destinations.toSet().length, columns,
+            reason: '$columns columns, seed $seed');
+
+        final counts = [
+          for (var pair = 0; pair < columns - 1; pair++)
+            board.rungs.where((row) => row[pair]).length,
+        ];
+        expect(counts.reduce(min), greaterThan(0),
+            reason: '$columns columns, seed $seed: $counts');
+      }
+    }
+  });
 }

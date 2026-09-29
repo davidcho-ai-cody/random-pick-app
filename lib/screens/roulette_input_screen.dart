@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/game_mode.dart';
@@ -408,6 +409,7 @@ class _InputRow extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
+                inputFormatters: [LengthLimitingTextInputFormatter(8)],
                 textInputAction: TextInputAction.next,
                 style: const TextStyle(
                     color: Color(0xFF342F45), fontWeight: FontWeight.w500),
